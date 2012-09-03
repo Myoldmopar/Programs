@@ -19,16 +19,15 @@ import matplotlib.pyplot as plt
 from configobj import ConfigObj
 
 class Weather(object):
-
-    appname = "im-ok-weather"
-    unknown = "??"
-
+    
     def destroy(self, widget):
         gtk.main_quit()
 
     def __init__(self):
         
         # init some global "constants"
+        self.appname = "im-ok-weather"
+        self.unknown = "??"
         self.url = "http://www.mesonet.org/data/public/mesonet/current/current.csv.txt"
         self.degree_symbol = unichr(176)
         self.config_file_path = os.getenv("HOME") + "/.config/" + self.appname
@@ -248,6 +247,10 @@ class Weather(object):
         return arrow
 
     def plot(self, widget):
+        plt.xlabel('Date/Time')
+        plt.ylabel('Temperature [%sF]' % self.degree_symbol)
+        plt.title('Recorded temperature history')
+        plt.grid(True)
         plt.plot_date(self.plotX, self.plotY, fmt='bo', tz=None, xdate=True)
         plt.show()
 
