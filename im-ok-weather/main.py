@@ -17,6 +17,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from configobj import ConfigObj
+from solarPosition import solarPosition
 
 class Weather(object):
     
@@ -35,15 +36,21 @@ class Weather(object):
         # init configurable parameters
         self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
         self.mesonet_location_tag = 'STIL'
+        self.latitude = 36.7
+        self.longitude = 97.0     
+        self.stdmeridian = 90
+        self.DST = True
         
         # init locale name (dynamically derived from configuration)...just set to Oklahoma initially
         self.locale_name = "Oklahoma"
         
         # override default configuration with saved data
-        self.read_config_file()
+        # FIXME: Allow newer versions of the config file to run without crashing after the upgrade
+        #self.read_config_file()
         
         # flush output config...not necessary except to create a one-time init file...
-        self.write_config_file()
+        # FIXME: Allow newer versions of the config file to run without crashing after the upgrade
+        #self.write_config_file()
         
         # init other global variables
         self.plotX = []
@@ -72,11 +79,19 @@ class Weather(object):
         config = ConfigObj(self.config_file_path)
         self.update_interval_ms = int(config['update_interval_ms'])
         self.mesonet_location_tag = config['mesonet_location_tag']
+        self.latitude = float(config['latitude']) 
+        self.longitude = float(config['longitude'])    
+        self.stdmeridian = float(config['stdmeridian']) 
+        self.DST = bool(config['DST'])
         
     def write_config_file(self):
         config = ConfigObj(self.config_file_path)
         config['update_interval_ms'] = self.update_interval_ms
         config['mesonet_location_tag'] = self.mesonet_location_tag
+        config['latitude'] = self.latitude
+        config['longitude'] = self.longitude
+        config['stdmeridian'] = self.stdmeridian
+        config['DST'] = self.DST
         config.write()
         
     def init_menu(self):
@@ -95,6 +110,12 @@ class Weather(object):
         self.menu.append(self.menu_plot_item)
         self.menu_plot_item.show()
         self.menu_plot_item.connect("activate",self.plot)
+
+        # plot solar profile for today
+        self.menu_solar_today_item = gtk.MenuItem("Plot today's solar")
+        self.menu.append(self.menu_solar_today_item)
+        self.menu_solar_today_item.show()
+        self.menu_solar_today_item.connect("activate",self.plotSolarToday)
 
         # separator for cleanliness
         self.menu_sep_item = gtk.SeparatorMenuItem()
@@ -253,6 +274,31 @@ class Weather(object):
         plt.grid(True)
         plt.plot_date(self.plotX, self.plotY, fmt='bo', tz=None, xdate=True)
         plt.show()
+
+    def plotSolarToday(self, widget):
+    
+        # get the current day
+        rightNow = time.localtime()
+        rightNowString = "%s-%s-%s %%s:00:00" % (rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
+        print "Right now string = " + rightNowString
+        
+        # now calculate the altitude angle for each hour (could do each half hour or whatever)
+        altitudes = []
+        for hour in range(0,24):
+            thisTime = time.strptime(rightNowString % str(hour), "%Y-%m-%d %H:%M:%S")   
+            solar = solarPosition(thisTime, self.latitude, self.longitude, self.stdmeridian, self.DST)
+            beta = solar.altitudeAngle()
+            altitudes.append(beta)
+        print altitudes
+
+        # plot it!
+        plt.xticks(np.arange(0,24,1))
+        plt.xlabel('Hour of day')
+        plt.ylabel('Solar Altitude Angle [%s]' % self.degree_symbol)
+        plt.title('Solar Profile for Today')
+        plt.grid(True)
+        plt.plot(altitudes)
+        plt.show()        
 
     def main(self):
         gtk.main()
