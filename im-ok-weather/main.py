@@ -1,6 +1,9 @@
 #!/usr/bin/python
 
 # dependencies:
+#python-gobject maybe?
+#python-gobject-dev maybe?
+#gobject-introspection maybe?
 #python-matplotlib (which depends on python and python-numpy)
 #python-configobj (for config file)
 
@@ -18,8 +21,13 @@ import matplotlib
 import matplotlib.pyplot as plt
 from configobj import ConfigObj
 from solarPosition import solarPosition
+import sys
+from PyQt4 import QtGui, QtCore
+import calendarPlot
 
 class Weather(object):
+    
+    oneTimeQTinit = True
     
     def destroy(self, widget):
         gtk.main_quit()
@@ -39,8 +47,7 @@ class Weather(object):
         self.latitude = 36.7
         self.longitude = 97.0     
         self.stdmeridian = 90
-        self.DST = True
-        
+                
         # init locale name (dynamically derived from configuration)...just set to Oklahoma initially
         self.locale_name = "Oklahoma"
         
@@ -82,7 +89,6 @@ class Weather(object):
         self.latitude = float(config['latitude']) 
         self.longitude = float(config['longitude'])    
         self.stdmeridian = float(config['stdmeridian']) 
-        self.DST = bool(config['DST'])
         
     def write_config_file(self):
         config = ConfigObj(self.config_file_path)
@@ -91,7 +97,6 @@ class Weather(object):
         config['latitude'] = self.latitude
         config['longitude'] = self.longitude
         config['stdmeridian'] = self.stdmeridian
-        config['DST'] = self.DST
         config.write()
         
     def init_menu(self):
@@ -116,6 +121,12 @@ class Weather(object):
         self.menu.append(self.menu_solar_today_item)
         self.menu_solar_today_item.show()
         self.menu_solar_today_item.connect("activate",self.plotSolarToday)
+
+        # plot solar profile for a different day
+        self.menu_solar_anyday_item = gtk.MenuItem("Plot another day's solar")
+        self.menu.append(self.menu_solar_anyday_item)
+        self.menu_solar_anyday_item.show()
+        self.menu_solar_anyday_item.connect("activate",self.plotSolarAnyDay)
 
         # separator for cleanliness
         self.menu_sep_item = gtk.SeparatorMenuItem()
@@ -275,18 +286,56 @@ class Weather(object):
         plt.plot_date(self.plotX, self.plotY, fmt='bo', tz=None, xdate=True)
         plt.show()
 
+    def getDST(self, year, month, date):
+        retVal = False
+        if year == 2012:
+            if month == 3 and date >= 11:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 4:
+                retVal = True
+        else:
+            print "DST not yet implemented for years other than 2012...fix me!...defaulting to not DST"
+        return retVal
+
     def plotSolarToday(self, widget):
     
         # get the current day
         rightNow = time.localtime()
         rightNowString = "%s-%s-%s %%s:00:00" % (rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
-        print "Right now string = " + rightNowString
+        DST = self.getDST(rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
+        self.plotSolar(rightNowString, 'today', DST)
         
-        # now calculate the altitude angle for each hour (could do each half hour or whatever)
+    def plotSolarAnyDay(self, widget):
+        
+        # only create the QTapp runtime once
+        if self.oneTimeQTinit == True:
+            self.app = QtGui.QApplication(sys.argv)
+            self.oneTimeQTinit = False
+            
+        gui = calendarPlot.CalendarPlot()
+        gui.show()
+        self.app.exec_()
+        print 'result = %s' % gui.result
+        if gui.result == "OK":
+            thisDay = gui.cal.selectedDate()
+            thisDayString = "%s-%s-%s %%s:00:00" % (thisDay.year(), thisDay.month(), thisDay.day())
+            plotDayString = '%s-%s-%s' % (thisDay.year(), thisDay.month(), thisDay.day())
+            DST = self.getDST(thisDay.year(), thisDay.month(), thisDay.day())
+            self.plotSolar(thisDayString, plotDayString, DST)
+        
+    def plotSolar(self, singleDayString, plotDateString, DSTFlag):
+        
+        #singleDayString should be of the form "YEAR-MONTH-DATE %s:00:00" so that the %s can be swept over 24 hours in a loop
+        #plotDateString is just a label for the top of the plot
+        
+        # calculate the altitude angle for each hour (could do each half hour or whatever)
         altitudes = []
         for hour in range(0,24):
-            thisTime = time.strptime(rightNowString % str(hour), "%Y-%m-%d %H:%M:%S")   
-            solar = solarPosition(thisTime, self.latitude, self.longitude, self.stdmeridian, self.DST)
+            print hour
+            thisTime = time.strptime(singleDayString % str(hour), "%Y-%m-%d %H:%M:%S")   
+            solar = solarPosition(thisTime, self.latitude, self.longitude, self.stdmeridian, DSTFlag)
             beta = solar.altitudeAngle()
             altitudes.append(beta)
         print altitudes
@@ -295,11 +344,11 @@ class Weather(object):
         plt.xticks(np.arange(0,24,1))
         plt.xlabel('Hour of day')
         plt.ylabel('Solar Altitude Angle [%s]' % self.degree_symbol)
-        plt.title('Solar Profile for Today')
+        plt.title('Solar Profile for %s' % plotDateString)
         plt.grid(True)
         plt.plot(altitudes)
-        plt.show()        
-
+        plt.show()     
+            
     def main(self):
         gtk.main()
 
