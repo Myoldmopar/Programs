@@ -1,12 +1,17 @@
 
+# imports
 from PyQt4 import QtGui, QtCore
 
 class CalendarPlot(QtGui.QWidget):
 
     def __init__(self):
+        
         # create GUI
         QtGui.QMainWindow.__init__(self)
-        self.setWindowTitle('Calendar widget')
+        
+        # set the title
+        self.setWindowTitle('Pick a day to plot the solar')
+        
         # Set the window dimensions
         self.resize(300,175)
         
@@ -29,10 +34,14 @@ class CalendarPlot(QtGui.QWidget):
         self.vbox.addLayout(self.btnBox)
        
     def onOK(self):
+        
+        # leave a flag and close
         self.result = 'OK'
         self.close()
         
     def onCancel(self):
+        
+        # leave a flag and close
         self.result = 'CANCEL'
         self.close()
         

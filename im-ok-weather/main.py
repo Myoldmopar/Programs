@@ -6,6 +6,7 @@
 #gobject-introspection maybe?
 #python-matplotlib (which depends on python and python-numpy)
 #python-configobj (for config file)
+# certainly some QT dependencies
 
 from gi.repository import Notify
 import re
