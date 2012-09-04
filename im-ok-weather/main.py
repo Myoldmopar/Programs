@@ -313,11 +313,15 @@ class Weather(object):
         if self.oneTimeQTinit == True:
             self.app = QtGui.QApplication(sys.argv)
             self.oneTimeQTinit = False
-            
+
+        # create and show the calendar dialog
         gui = calendarPlot.CalendarPlot()
         gui.show()
+        
+        # start the message loop
         self.app.exec_()
-        print 'result = %s' % gui.result
+        
+        # if the user clicked OK, show the plot
         if gui.result == "OK":
             thisDay = gui.cal.selectedDate()
             thisDayString = "%s-%s-%s %%s:00:00" % (thisDay.year(), thisDay.month(), thisDay.day())
