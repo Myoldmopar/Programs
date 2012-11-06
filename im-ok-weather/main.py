@@ -7,6 +7,7 @@
 #python-matplotlib (which depends on python and python-numpy)
 #python-configobj (for config file)
 # certainly some QT dependencies
+# currently trying python-qt4
 
 from gi.repository import Notify
 import re
@@ -304,6 +305,7 @@ class Weather(object):
     
         # get the current day
         rightNow = time.localtime()
+	# note that the fourth item below is actually an escaped percent sign!
         rightNowString = "%s-%s-%s %%s:00:00" % (rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
         DST = self.getDST(rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
         self.plotSolar(rightNowString, 'today', DST)
@@ -325,6 +327,7 @@ class Weather(object):
         # if the user clicked OK, show the plot
         if gui.result == "OK":
             thisDay = gui.cal.selectedDate()
+	    # note that the fourth item % item here is actually escaped to leave a percent symbol
             thisDayString = "%s-%s-%s %%s:00:00" % (thisDay.year(), thisDay.month(), thisDay.day())
             plotDayString = '%s-%s-%s' % (thisDay.year(), thisDay.month(), thisDay.day())
             DST = self.getDST(thisDay.year(), thisDay.month(), thisDay.day())
@@ -352,6 +355,17 @@ class Weather(object):
         plt.title('Solar Profile for %s' % plotDateString)
         plt.grid(True)
         plt.plot(altitudes)
+
+	# add the current date-time / altitude, just for info
+	rightNow = time.localtime()
+	rightNowString = "%s-%s-%s %s:%s:00" % (rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday, rightNow.tm_hour, rightNow.tm_min)
+        rightNowTime = time.strptime(rightNowString, "%Y-%m-%d %H:%M:%S")
+	rightNowsolar = solarPosition(rightNowTime, self.latitude, self.longitude, self.stdmeridian, DSTFlag)
+        rightNowbeta = rightNowsolar.altitudeAngle()
+	thisHour = rightNow.tm_hour + rightNow.tm_min/60.0
+	plt.plot([thisHour],[rightNowbeta],'b.',markersize=10.0)
+
+	# show it
         plt.show()     
             
     def main(self):
