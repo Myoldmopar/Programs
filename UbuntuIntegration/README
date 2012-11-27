@@ -1,0 +1,44 @@
+
+# this python script demonstrates six key features of Ubuntu Integration:
+# 1: AppIndicator (the top right panel)
+# 2: NotifyOSD (notification popup bubbles)
+# 3: Unity Launcher Progress (the progress bar on the icon)
+# 4: Unity Launcher Badge Counts (the numbers on icons)
+# 5: Unity Launcher Dynamic QuickLists
+# 6: Unity Launcher Urgency Notification
+
+# first things first, we need to set up a .desktop file to use on the unity launcher
+# take the entire contents here, paste them into a file, uncomment the lines
+# note that the first line must remain commented to be a she-bang
+# the second code line is just a comment
+# save the file at the above path
+# then go to that folder in nautilus (you may need to ctrl-h in order to see the hidden .local folder)
+# find this file and drag and drop it directly on to the unity launcher
+
+# ****** START OF ~/.local/share/applications/test.desktop FILE CONTENTS ****** #
+
+##!/usr/bin/env xdg-open
+#
+## note the above line (and this one) should remain commented
+#
+#[Desktop Entry]
+#Version=1.0
+#Type=Application
+#Terminal=false
+#StartupNotify=true
+#Name=Test Desktop File using Firefox
+#Exec=firefox
+#Name[en_US]=TestName
+#
+#X-Ayatana-Desktop-Shortcuts=NewWindow;NewTab
+#[NewWindow Shortcut Group]
+#Name=New Window
+#Exec=gnome-terminal --window
+#TargetEnvironment=Unity
+#
+#[NewTab Shortcut Group]
+#Name=New Tab
+#Exec=gnome-terminal --tab
+#TargetEnvironment=Unity
+
+# ****** END OF FILE ****** #
