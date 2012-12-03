@@ -17,10 +17,11 @@ class my(object):
         
         # init some global "constants"
         self.appname = "indicator-my"
-        
+        self.homeDir = os.getenv('HOME')
+                
         # init the notification system
         Notify.init(self.appname)
-        self.notif = Notify.Notification.new("Starting MY Ubuntu!", "This is gonna be great!", "") 
+        self.notif = Notify.Notification.new("Starting MY Ubuntu!", "This is gonna be great!", self.homeDir + "/bin/my.png") 
         self.notif.show()
         
         # set up the launcher
@@ -83,7 +84,7 @@ class my(object):
         self.launcher.set_property("quicklist", self.ql)
             
     def suspendlid(self, widget):
-        os.system("gksudo /home/edwin/bin/suspendLID.sh")  
+        os.system("gksudo " + self.homeDir + "/bin/suspendLID.sh")  
     
     def startTimer(self):
         self.turnedOff = False
