@@ -55,7 +55,7 @@ class my(object):
         self.menu_quick_timer_item = Gtk.MenuItem("Quick 15-min Timer")
         self.menu.append(self.menu_quick_timer_item)
         self.menu_quick_timer_item.show()
-        self.menu_quick_timer_item.connect("activate", self.startTimer)
+        self.menu_quick_timer_item.connect("activate", self.startTimer1)
     
         # separator for cleanliness
         self.menu_sep_item = Gtk.SeparatorMenuItem()
@@ -70,6 +70,11 @@ class my(object):
             
     def init_quicklist(self):
         self.ql = Dbusmenu.Menuitem.new()
+        self.item0 = Dbusmenu.Menuitem.new()
+        self.item0.property_set(Dbusmenu.MENUITEM_PROP_LABEL, "Turn on timer")
+        self.item0.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, True)
+        self.item0.connect("item-activated", self.startTimer2)
+        self.ql.child_append(self.item0)
         self.item1 = Dbusmenu.Menuitem.new()
         self.item1.property_set(Dbusmenu.MENUITEM_PROP_LABEL, "Turn off timer")
         self.item1.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, False)
@@ -80,13 +85,24 @@ class my(object):
     def suspendlid(self, widget):
         os.system("gksudo /home/edwin/bin/suspendLID.sh")  
     
-    def startTimer(self, widget):
+    def startTimer(self):
         self.turnedOff = False
         self.counter = 15+1
+        self.item0.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, False)
         self.item1.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, True)
         self.update_timer()
         GObject.timeout_add_seconds(60, self.update_timer)
         self.launcher.set_property("count_visible", True)
+        
+        #for quickitem in ql.get_children():
+        #if quickitem.property_get('windowpath')==windowpath:
+            #ql.child_delete(quickitem)
+    
+    def startTimer1(self, widget):
+        self.startTimer()
+    
+    def startTimer2(self, a, b):
+        self.startTimer()
         
     def update_timer(self):
         
@@ -112,9 +128,22 @@ class my(object):
     
     def turnOffTimer(self, a, b):
         self.launcher.set_property("count_visible", False)
+        self.item0.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, True)
         self.item1.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, False)
         self.turnedOff = True
     
-if __name__ == "__main__":        
+if __name__ == "__main__":     
+    
+    # check for another running instance   
+    import fcntl
+    lock_file = os.getenv('HOME') + '/.indicator-my.lock'
+    fp = open(lock_file, 'w')
+    try:
+        fcntl.lockf(fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except IOError:
+        # another instance is running
+        exit()
+    
+    # it's ok, run!
     my()
     GObject.MainLoop().run()
