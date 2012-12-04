@@ -42,6 +42,9 @@ class my(object):
         # update the indicator label with new data
         self.ind.set_label("MY", "")
         
+        # we'll also do some other Unity mods
+        self.myChrome()
+                
     def init_menu(self):
         
         # create a gtkMenu for the appindicator
@@ -102,11 +105,7 @@ class my(object):
         self.update_timer()
         GObject.timeout_add_seconds(60, self.update_timer)
         self.launcher.set_property("count_visible", True)
-        
-        #for quickitem in ql.get_children():
-        #if quickitem.property_get('windowpath')==windowpath:
-            #ql.child_delete(quickitem)
-    
+            
     def startTimer1(self, widget):
         self.startTimer()
     
@@ -144,6 +143,23 @@ class my(object):
     def openToDoList(self, widget):
         if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
             os.system("xdg-open " + self.homeDir + "/Documents/ToDoList/todo.todo")
+    
+    def myChrome(self):
+        self.chromeDesktop = Unity.LauncherEntry.get_for_desktop_id("google-chrome.desktop")
+        self.chromeql = Dbusmenu.Menuitem.new()
+        self.chromeitem0 = Dbusmenu.Menuitem.new()
+        self.chromeitem0.property_set(Dbusmenu.MENUITEM_PROP_LABEL, "Open GMail")
+        self.chromeitem0.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, True)
+        self.chromeitem0.connect("item-activated", self.openGMail)
+        self.chromeql.child_append(self.chromeitem0)
+        self.chromeDesktop.set_property("quicklist", self.chromeql)        
+            
+    def openGMail(self, a, b):
+        os.system("google-chrome mail.google.com")
+        
+    #for quickitem in ql.get_children():
+    #if quickitem.property_get('windowpath')==windowpath:
+        #ql.child_delete(quickitem)        
             
 if __name__ == "__main__":     
     
