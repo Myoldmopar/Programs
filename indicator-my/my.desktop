@@ -8,4 +8,4 @@ StartupNotify=true
 Icon=/home/edwin/bin/my.png
 Name=MY utility
 Exec=indicator-my
-Name[en_US]=my
+Name[en_US]=My Ubuntu

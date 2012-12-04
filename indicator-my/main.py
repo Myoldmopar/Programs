@@ -6,6 +6,7 @@
 #gobject-introspection maybe?
 
 import os
+import sys
 from gi.repository import Dbusmenu, Unity, GObject, Notify, Gtk, AppIndicator3 as appindicator
 
 class my(object):
@@ -57,6 +58,13 @@ class my(object):
         self.menu.append(self.menu_quick_timer_item)
         self.menu_quick_timer_item.show()
         self.menu_quick_timer_item.connect("activate", self.startTimer1)
+    
+        # ToDo list item
+        self.menu_todo_item = Gtk.MenuItem("Open ToDo List")
+        self.menu.append(self.menu_todo_item)
+        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
+            self.menu_todo_item.show()
+        self.menu_todo_item.connect("activate", self.openToDoList)
     
         # separator for cleanliness
         self.menu_sep_item = Gtk.SeparatorMenuItem()
@@ -133,6 +141,10 @@ class my(object):
         self.item1.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, False)
         self.turnedOff = True
     
+    def openToDoList(self, widget):
+        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
+            os.system("xdg-open " + self.homeDir + "/Documents/ToDoList/todo.todo")
+            
 if __name__ == "__main__":     
     
     # check for another running instance   
