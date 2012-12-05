@@ -26,6 +26,7 @@ from solarPosition import solarPosition
 import sys
 from PyQt4 import QtGui, QtCore
 import calendarPlot
+import urllib
 
 class Weather(object):
     
@@ -46,9 +47,12 @@ class Weather(object):
         # init configurable parameters
         self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
         self.mesonet_location_tag = 'STIL'
-        self.latitude = 36.7
-        self.longitude = 97.0     
+        self.latitude = 36.12
+        self.longitude = 97.07 
         self.stdmeridian = 90
+        
+        # derived parameters based on configurable parameters
+        self.county = self.getCounty()
                 
         # init locale name (dynamically derived from configuration)...just set to Oklahoma initially
         self.locale_name = "Oklahoma"
@@ -305,7 +309,7 @@ class Weather(object):
     
         # get the current day
         rightNow = time.localtime()
-	# note that the fourth item below is actually an escaped percent sign!
+        # note that the fourth item below is actually an escaped percent sign!
         rightNowString = "%s-%s-%s %%s:00:00" % (rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
         DST = self.getDST(rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
         self.plotSolar(rightNowString, 'today', DST)
@@ -327,7 +331,7 @@ class Weather(object):
         # if the user clicked OK, show the plot
         if gui.result == "OK":
             thisDay = gui.cal.selectedDate()
-	    # note that the fourth item % item here is actually escaped to leave a percent symbol
+            # note that the fourth item % item here is actually escaped to leave a percent symbol
             thisDayString = "%s-%s-%s %%s:00:00" % (thisDay.year(), thisDay.month(), thisDay.day())
             plotDayString = '%s-%s-%s' % (thisDay.year(), thisDay.month(), thisDay.day())
             DST = self.getDST(thisDay.year(), thisDay.month(), thisDay.day())
@@ -356,17 +360,42 @@ class Weather(object):
         plt.grid(True)
         plt.plot(altitudes)
 
-	# add the current date-time / altitude, just for info
-	rightNow = time.localtime()
-	rightNowString = "%s-%s-%s %s:%s:00" % (rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday, rightNow.tm_hour, rightNow.tm_min)
+        # add the current date-time / altitude, just for info
+        rightNow = time.localtime()
+        rightNowString = "%s-%s-%s %s:%s:00" % (rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday, rightNow.tm_hour, rightNow.tm_min)
         rightNowTime = time.strptime(rightNowString, "%Y-%m-%d %H:%M:%S")
-	rightNowsolar = solarPosition(rightNowTime, self.latitude, self.longitude, self.stdmeridian, DSTFlag)
+        rightNowsolar = solarPosition(rightNowTime, self.latitude, self.longitude, self.stdmeridian, DSTFlag)
         rightNowbeta = rightNowsolar.altitudeAngle()
-	thisHour = rightNow.tm_hour + rightNow.tm_min/60.0
-	plt.plot([thisHour],[rightNowbeta],'b.',markersize=10.0)
+        thisHour = rightNow.tm_hour + rightNow.tm_min/60.0
+        plt.plot([thisHour],[rightNowbeta],'b.',markersize=10.0)
 
-	# show it
+        # show it
         plt.show()     
+
+    def getCounty(self):
+        # open the connection, note longitude must be -ve for west
+        f = urllib.urlopen('http://labs.silverbiology.com/countylookup/lookup.php?cmd=findCounty&DecimalLatitude=%s&DecimalLongitude=%s' % (self.latitude, -self.longitude))
+        # read the results
+        s = f.read()
+        # take out start and end curly brackets
+        s2 = s[1:-1]
+        # remove all in-string quotes
+        s3 = s2.replace('"', '')
+        # split into tokens
+        s4 = s3.split(',')
+        # create a list 
+        entries = []
+        # now populate it
+        for sItem in s4:
+            thisList = sItem.split(':')
+            entries.append(thisList)
+        # init a county variable
+        county = ""
+        # now get the county name
+        for entry in entries:
+            if entry[0] == 'County':
+                county = entry[1]
+        return county        
             
     def main(self):
         gtk.main()
