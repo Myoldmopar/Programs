@@ -6,8 +6,6 @@
 #gobject-introspection maybe?
 #python-matplotlib (which depends on python and python-numpy)
 #python-configobj (for config file)
-# certainly some QT dependencies
-# currently trying python-qt4
 
 from gi.repository import Notify
 import re
@@ -24,7 +22,6 @@ import matplotlib.pyplot as plt
 from configobj import ConfigObj
 from solarPosition import solarPosition
 import sys
-from PyQt4 import QtGui, QtCore
 import calendarPlot
 import urllib
 import StringIO
@@ -42,8 +39,6 @@ class StormTypes():
     sTstormWatch    = 'Severe Thunderstorm Watch'
 
 class Weather(object):
-    
-    oneTimeQTinit = True
     
     def destroy(self, widget):
         gtk.main_quit()
@@ -144,12 +139,6 @@ class Weather(object):
         self.menu.append(self.menu_solar_today_item)
         self.menu_solar_today_item.show()
         self.menu_solar_today_item.connect("activate",self.plotSolarToday)
-
-        # plot solar profile for a different day
-        self.menu_solar_anyday_item = gtk.MenuItem("Plot another day's solar")
-        self.menu.append(self.menu_solar_anyday_item)
-        self.menu_solar_anyday_item.show()
-        self.menu_solar_anyday_item.connect("activate",self.plotSolarAnyDay)
 
         # separator for cleanliness
         self.menu_sep_item = gtk.SeparatorMenuItem()
@@ -357,29 +346,6 @@ class Weather(object):
         DST = self.getDST(rightNow.tm_year, rightNow.tm_mon, rightNow.tm_mday)
         self.plotSolar(rightNowString, 'today', DST)
         
-    def plotSolarAnyDay(self, widget):
-        
-        # only create the QTapp runtime once
-        if self.oneTimeQTinit == True:
-            self.app = QtGui.QApplication(sys.argv)
-            self.oneTimeQTinit = False
-
-        # create and show the calendar dialog
-        gui = calendarPlot.CalendarPlot()
-        gui.show()
-        
-        # start the message loop
-        self.app.exec_()
-        
-        # if the user clicked OK, show the plot
-        if gui.result == "OK":
-            thisDay = gui.cal.selectedDate()
-            # note that the fourth item % item here is actually escaped to leave a percent symbol
-            thisDayString = "%s-%s-%s %%s:00:00" % (thisDay.year(), thisDay.month(), thisDay.day())
-            plotDayString = '%s-%s-%s' % (thisDay.year(), thisDay.month(), thisDay.day())
-            DST = self.getDST(thisDay.year(), thisDay.month(), thisDay.day())
-            self.plotSolar(thisDayString, plotDayString, DST)
-        
     def plotSolar(self, singleDayString, plotDateString, DSTFlag):
         
         #singleDayString should be of the form "YEAR-MONTH-DATE %s:00:00" so that the %s can be swept over 24 hours in a loop
@@ -388,12 +354,12 @@ class Weather(object):
         # calculate the altitude angle for each hour (could do each half hour or whatever)
         altitudes = []
         for hour in range(0,24):
-            print hour
+            #print hour
             thisTime = time.strptime(singleDayString % str(hour), "%Y-%m-%d %H:%M:%S")   
             solar = solarPosition(thisTime, self.latitude, self.longitude, self.stdmeridian, DSTFlag)
             beta = solar.altitudeAngle()
             altitudes.append(beta)
-        print altitudes
+        #print altitudes
 
         # plot it!
         plt.xticks(np.arange(0,24,1))

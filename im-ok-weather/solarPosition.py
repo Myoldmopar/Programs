@@ -233,7 +233,7 @@ class solarPosition(object):
         return altitudeAngleDegrees
        
     def output(self, string):
-        print string
+        #print string
 
 
         
