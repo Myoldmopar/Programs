@@ -1,3 +1,4 @@
+Need to figure out how to add users to a github repository and use their issue tracking system
 Move warns and watches to a separate class
 Move all update operations to an update class
 Move what's left into a main, simple, program class

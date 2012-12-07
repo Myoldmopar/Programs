@@ -29,10 +29,8 @@ import calendarPlot
 import urllib
 import StringIO
 
-class Weather(object):
-    
-    oneTimeQTinit = True
-    
+# a simple enum-only class
+class StormTypes():
     NoStorms        = 0
     TornadoWarning  = 1
     sTornadoWarning = 'Tornado Warning'
@@ -42,6 +40,10 @@ class Weather(object):
     sTstormWarning  = 'Severe Thunderstorm Warning'
     TstormWatch     = 4
     sTstormWatch    = 'Severe Thunderstorm Watch'
+
+class Weather(object):
+    
+    oneTimeQTinit = True
     
     def destroy(self, widget):
         gtk.main_quit()
@@ -67,6 +69,9 @@ class Weather(object):
                 
         # init locale name (dynamically derived from configuration)...just set to Oklahoma initially
         self.locale_name = "Oklahoma"
+        
+        # other initialization
+        self.storms = StormTypes()
         
         # override default configuration with saved data
         # FIXME: Allow newer versions of the config file to run without crashing after the upgrade
@@ -280,16 +285,16 @@ class Weather(object):
         if not theseWarnings:
             self.notification.update(self.locale_name + " Weather Updated", sNotify, '') 
             self.notification.show()
-        elif self.TornadoWarning in theseWarnings:
+        elif self.storms.TornadoWarning in theseWarnings:
             self.notification.update(self.locale_name + " Weather Updated", "TORNADO WARNING!", '') 
             self.notification.show()
-        elif self.TornadoWatch in theseWarnings:
+        elif self.storms.TornadoWatch in theseWarnings:
             self.notification.update(self.locale_name + " Weather Updated", "Tornado Watch!", '') 
             self.notification.show()
-        elif self.TstormWarning in theseWarnings:
+        elif self.storms.TstormWarning in theseWarnings:
             self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Warning!", '') 
             self.notification.show()
-        elif self.TstormWatch in theseWarnings:
+        elif self.storms.TstormWatch in theseWarnings:
             self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Watch", '') 
             self.notification.show()
                 
@@ -446,6 +451,7 @@ class Weather(object):
             # read the results
             s = f.read()
         except:
+            print "Couldn't read severe site"
             return watchWarnings
         # this is the title of the state box where warnings would be found
         sState='<a name="Oklahoma"></a>'
@@ -487,16 +493,6 @@ class Weather(object):
                     
                     # if we aren't ignoring it, do more stuff
                     if not ignore:
-                        #spew
-                        #print lineNum
-                        #print lboxTitle
-                        #print warnList
-                        #print warnType 
-                        #print div
-                        #print ignore
-                        #print thisWarnType
-                        #print warnLocations
-                        #print self.thisCounty
                         if self.thisCounty in warnLocations:
                             watchWarnings.append(thisWarnType)
                             #print watchWarnings
@@ -515,18 +511,18 @@ class Weather(object):
             
     def getWarnType(self, str):
         # expects a line like:
-        # <div class="boxTitle">Flood Warning</div>
+        # <div class="boxTitle">WarningOrWatchType</div>
         # with 'Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', or 'Severe Thunderstorm Watch'...any others are ignored
-        if self.sTornadoWarning in str:
-            return False, self.TornadoWarning
-        elif self.sTornadoWatch in str:
-            return False, self.TornadoWatch
-        elif self.sTstormWarning in str:
-            return False, self.TstormWarning
-        elif self.sTstormWatch in str:
-            return False, self.TstormWatch
+        if self.storms.sTornadoWarning in str:
+            return False, self.storms.TornadoWarning
+        elif self.storms.sTornadoWatch in str:
+            return False, self.storms.TornadoWatch
+        elif self.storms.sTstormWarning in str:
+            return False, self.storms.TstormWarning
+        elif self.storms.sTstormWatch in str:
+            return False, self.storms.TstormWatch
         else:
-            return True, self.NoStorms
+            return True, self.storms.NoStorms
                     
     def main(self):
         gtk.main()
