@@ -27,10 +27,21 @@ import sys
 from PyQt4 import QtGui, QtCore
 import calendarPlot
 import urllib
+import StringIO
 
 class Weather(object):
     
     oneTimeQTinit = True
+    
+    NoStorms        = 0
+    TornadoWarning  = 1
+    sTornadoWarning = 'Tornado Warning'
+    TornadoWatch    = 2
+    sTornadoWatch   = 'Tornado Watch'
+    TstormWarning   = 3
+    sTstormWarning  = 'Severe Thunderstorm Warning'
+    TstormWatch     = 4
+    sTstormWatch    = 'Severe Thunderstorm Watch'
     
     def destroy(self, widget):
         gtk.main_quit()
@@ -71,6 +82,7 @@ class Weather(object):
         
         # init the notification system
         Notify.init(self.appname)
+        self.notification = Notify.Notification.new('', '', '') 
         
         # initi the gtk menu
         self.init_menu()
@@ -196,48 +208,57 @@ class Weather(object):
                 
     def do_a_refresh(self, widget=None):
                 
-        # open the site, and read the results into a variable
-        f = urllib2.urlopen(self.url)
-        result = f.read()
+        try:        
+            
+            # open the site, and read the results into a variable
+            f = urllib2.urlopen(self.url)
+            result = f.read()
+            
+            # split the result into a list, one item per line of the original data
+            listA = result.split('\n')
+            
+            # parse out Stillwater's data
+            expr = re.compile('^'+self.mesonet_location_tag)
+            data = filter(expr.search,listA)
+            tokens = [x.strip() for x in data[0].split(',')]
+            
+            # check if there is even an entry for this locale
+            if tokens[1].strip() == '':
+                self.ind.set_label(" No Data for: " + self.mesonet_location_tag)
+                return
+            
+            # get this valid location name
+            self.locale_name = tokens[1]
+            
+            # check each token, assign the unknown status if it is missing
+            # dry bulb temperature
+            if tokens[10].strip() == '':
+                temp = self.unknown
+            else:
+                temp = int(tokens[10])
+                
+            # wind speed
+            if tokens[16].strip() == '':
+                windspeed = self.unknown
+            else:
+                windspeed = int(tokens[16])
+                
+            # wind direction
+            if tokens[15].strip() == '':
+                winddir = self.unknown
+                arrow = ""
+            else:
+                winddir = str(tokens[15])
+                # get a nice looking unicode arrow character based on wind direction
+                arrow = self.get_arrow(winddir)
         
-        # split the result into a list, one item per line of the original data
-        listA = result.split('\n')
-        
-        # parse out Stillwater's data
-        expr = re.compile('^'+self.mesonet_location_tag)
-        data = filter(expr.search,listA)
-        tokens = [x.strip() for x in data[0].split(',')]
-        
-        # check if there is even an entry for this locale
-        if tokens[1].strip() == '':
-            self.ind.set_label(" No Data for: " + self.mesonet_location_tag)
-            return
-        
-        # get this valid location name
-        self.locale_name = tokens[1]
-        
-        # check each token, assign the unknown status if it is missing
-        # dry bulb temperature
-        if tokens[10].strip() == '':
+        except:
+            
             temp = self.unknown
-        else:
-            temp = int(tokens[10])
-            
-        # wind speed
-        if tokens[16].strip() == '':
             windspeed = self.unknown
-        else:
-            windspeed = int(tokens[16])
-            
-        # wind direction
-        if tokens[15].strip() == '':
             winddir = self.unknown
             arrow = ""
-        else:
-            winddir = str(tokens[15])
-            # get a nice looking unicode arrow character based on wind direction
-            arrow = self.get_arrow(winddir)
-        
+            
         # create an update string
         sIndicator = " %s%sF  %s%s " % (str(temp), self.degree_symbol, str(windspeed), arrow)
         
@@ -247,19 +268,36 @@ class Weather(object):
         # update the menu item to say we have updated
         self.menu_update_item.set_label(thistime.strftime("Updated at: %Y-%b-%d %H:%M:%S"))
         
+        # check for severe weather
+        theseWarnings = self.getWatchWarnings()
+                 
         # update the indicator label with new data
         self.ind.set_label(sIndicator)
         
         # send a notification message
         sNotify = "Temperature:\t%s\nWind Speed:\t%s\nWind Direction:\t%s" % (str(temp), str(windspeed), winddir)
-        self.notification = Notify.Notification.new (self.locale_name + " Weather Updated", sNotify, '') 
-        self.notification.show()
-        
+        #print theseWarnings
+        if not theseWarnings:
+            self.notification.update(self.locale_name + " Weather Updated", sNotify, '') 
+            self.notification.show()
+        elif self.TornadoWarning in theseWarnings:
+            self.notification.update(self.locale_name + " Weather Updated", "TORNADO WARNING!", '') 
+            self.notification.show()
+        elif self.TornadoWatch in theseWarnings:
+            self.notification.update(self.locale_name + " Weather Updated", "Tornado Watch!", '') 
+            self.notification.show()
+        elif self.TstormWarning in theseWarnings:
+            self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Warning!", '') 
+            self.notification.show()
+        elif self.TstormWatch in theseWarnings:
+            self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Watch", '') 
+            self.notification.show()
+                
         # store the current time and temperature for plotting
         thistime_num = matplotlib.dates.date2num(thistime)
         self.plotX.append(thistime_num)
         self.plotY.append(temp)
-        
+                
         # callback return value, so that gobject knows it can continue cycling
         return True
 
@@ -396,7 +434,100 @@ class Weather(object):
             if entry[0] == 'County':
                 county = entry[1]
         return county        
+   
+    def getWatchWarnings(self):
+        # init line counter
+        lineNum = 0
+        # init a return value (list of watch/warnings)
+        watchWarnings = []
+        try:
+            # open the connection to wunderground
+            f = urllib.urlopen('http://www.wunderground.com/severe.asp')
+            # read the results
+            s = f.read()
+        except:
+            return watchWarnings
+        # this is the title of the state box where warnings would be found
+        sState='<a name="Oklahoma"></a>'
+        # check if oklahoma is even in the entire contents
+        if not sState in s:
+            print "Didn't find Oklahoma in the severe list"
+            return watchWarnings
+        # Start reading lines, first create a string IO object
+        buff = StringIO.StringIO(s)
+        # read the first line to get things started
+        line = buff.readline()
+        lineNum += 1
+        # then start looping over the string until we run out of lines
+        while line:
+            if line.strip() == sState:
+                # we've found our state box, now let's skip the next two lines, since they are just box definitions
+                dummy = buff.readline()
+                lineNum += 1
+                dummy = buff.readline()
+                lineNum += 1
+                # now we need to start processing the warnings.  These come in quadrature:
+                # 1: a line with boxTitle in it specifying the watch/warning type
+                # 2: a line that says warnList
+                # 3: a line that contains a comma delimited list of these: <a href="SomeLinkPath.html">CountyOrLandmarkName</a>
+                # 4: a </div> line
+                lboxTitle = buff.readline()
+                lineNum += 1
+                while not 'Footer' in lboxTitle:
+                    # read in relevant and dummy lines for this warn box
+                    warnList = buff.readline()
+                    lineNum += 1
+                    warnLocations = buff.readline()
+                    lineNum += 1
+                    div      = buff.readline()
+                    lineNum += 1
+                    
+                    # process the warning type into a useful parameter
+                    ignore, thisWarnType = self.getWarnType(lboxTitle)
+                    
+                    # if we aren't ignoring it, do more stuff
+                    if not ignore:
+                        #spew
+                        #print lineNum
+                        #print lboxTitle
+                        #print warnList
+                        #print warnType 
+                        #print div
+                        #print ignore
+                        #print thisWarnType
+                        #print warnLocations
+                        #print self.thisCounty
+                        if self.thisCounty in warnLocations:
+                            watchWarnings.append(thisWarnType)
+                            #print watchWarnings
+                    
+                    # read another box title
+                    lboxTitle = buff.readline()
+                    lineNum += 1
+                    if 'Footer' in lboxTitle:
+                        break
+                        
+            # get the next line if it exists
+            line = buff.readline()
+            lineNum += 1
+        
+        return watchWarnings
             
+    def getWarnType(self, str):
+        # expects a line like:
+        # <div class="boxTitle">Flood Warning</div>
+        # with 'Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', or 'Severe Thunderstorm Watch'...any others are ignored
+        if self.sTornadoWarning in str:
+            return False, self.TornadoWarning
+        elif self.sTornadoWatch in str:
+            return False, self.TornadoWatch
+        elif self.sTstormWarning in str:
+            return False, self.TstormWarning
+        elif self.sTstormWatch in str:
+            return False, self.TstormWatch
+        else:
+            return True, self.NoStorms
+                    
     def main(self):
         gtk.main()
 
