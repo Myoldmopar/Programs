@@ -22,7 +22,6 @@ import matplotlib.pyplot as plt
 from configobj import ConfigObj
 from solarPosition import solarPosition
 import sys
-import calendarPlot
 import urllib
 import StringIO
 
