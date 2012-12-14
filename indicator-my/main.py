@@ -45,6 +45,9 @@ class my(object):
         # we'll also do some other Unity mods
         self.myChrome()
                 
+        # dang, since I have jabref building now, I'm doing that too!
+        self.myJabRef()        
+                
     def init_menu(self):
         
         # create a gtkMenu for the appindicator
@@ -156,6 +159,19 @@ class my(object):
             
     def openGMail(self, a, b):
         os.system("google-chrome mail.google.com")
+        
+    def myJabRef(self):
+        self.jabrefDesktop = Unity.LauncherEntry.get_for_desktop_id("jabref.desktop")
+        self.jabrefql = Dbusmenu.Menuitem.new()
+        self.jabrefitem0 = Dbusmenu.Menuitem.new()
+        self.jabrefitem0.property_set(Dbusmenu.MENUITEM_PROP_LABEL, "Open GitJabRef")
+        self.jabrefitem0.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, True)
+        self.jabrefitem0.connect("item-activated", self.openGitJabRef)
+        self.jabrefql.child_append(self.jabrefitem0)
+        self.jabrefDesktop.set_property("quicklist", self.jabrefql)
+    
+    def openGitJabRef(self, a, b):
+        os.system("/home/edwin/bin/OpenGitJabRef.sh")
         
     #for quickitem in ql.get_children():
     #if quickitem.property_get('windowpath')==windowpath:
