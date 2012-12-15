@@ -117,6 +117,62 @@ class solarPosition(object):
     def output(self, string):
         print string
 
+class settingsWindow(gtk.Window):
+    
+    def __init__(self):
+        gtk.Window.__init__(self) 
+        self.set_title("Update Settings")
+        
+        self.set_border_width(10)
+        self.set_modal(True)
+        meso_site_store = gtk.ListStore(str, str)
+        meso_site_store.append(['STIL', 'Stillwater'])
+        meso_site_store.append(['PAWN', 'Pawnee'])
+        meso_site_store.append(['CARL', 'Lake Carl Blackwell'])
+        
+        meso_site_combo = gtk.ComboBox(model=meso_site_store)
+        meso_site_combo.connect("changed", self.on_name_combo_changed)
+        #meso_site_combo.set_entry_text_column(0)
+        
+        cell = gtk.CellRendererText()
+        meso_site_combo.pack_start(cell, True)
+        meso_site_combo.add_attribute(cell, "text", 1)
+        
+        btnOK = gtk.Button(stock = gtk.STOCK_OK)
+        btnOK.connect("clicked", self.onOK)
+        btnCancel = gtk.Button(stock = gtk.STOCK_CANCEL)
+        btnCancel.connect("clicked", self.onCancel)
+        
+        hbox = gtk.HBox(spacing=6)
+        hbox.pack_start(btnOK)
+        hbox.pack_start(btnCancel)
+                
+        vbox = gtk.VBox(spacing=6)       
+        vbox.pack_start(meso_site_combo, False, False, 0)
+        vbox.pack_start(hbox, False, False, 0) 
+        
+        self.add(vbox)
+        
+        self.applyChanges = False
+
+    def on_name_combo_changed(self, combo):
+        tree_iter = combo.get_active_iter()
+        if tree_iter != None:
+            model = combo.get_model()
+            self.ID = model[tree_iter][0]
+            print "Selected: ID=%s" % (self.ID)
+        else:
+            entry = combo.get_child()
+            print "Entered: %s" % entry.get_text()
+
+    def onOK(self, widget):
+        self.applyChanges = True
+        self.hide()
+        
+    def onCancel(self, widget):
+        self.applyChanges = False
+        self.hide()
+
 # the full weather program class
 class Weather(object):
     
@@ -271,14 +327,20 @@ class Weather(object):
 
     def update_settings(self, widget):
         
+        win = settingsWindow()
+        win.show_all()
+        win.connect("hide", self.handleClose)
         # issue a message
-        os.system('zenity --info --text="Not yet implemented...for now just modify the config file: %s"' % (self.config_file_path))  
+        #os.system('zenity --info --text="Not yet implemented...for now just modify the config file: %s"' % (self.config_file_path))  
         
         # update any dynamic settings
         self.init_dynamicSettings_menu()
         
         # nothing?
         return
+
+    def handleClose(self, widget):
+        print "it closed"
                 
     def do_a_refresh(self, widget=None):
                 
@@ -343,7 +405,7 @@ class Weather(object):
         self.menu_update_item.set_label(thistime.strftime("Updated at: %Y-%b-%d %H:%M:%S"))
         
         # check for severe weather
-        theseWarnings = self.getWatchWarnings()
+        theseWarnings = [] #self.getWatchWarnings()
                  
         # update the indicator label with new data
         self.ind.set_label(sIndicator)
