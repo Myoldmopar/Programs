@@ -119,39 +119,57 @@ class solarPosition(object):
 # simple settings popup dialog
 class settingsWindow(gtk.Window):
     
-    def __init__(self, locations, initIndex):
+    def __init__(self, locations, initIndex, prevFreq):
         gtk.Window.__init__(self) 
-        self.set_title("Update Settings")
         
+        # initialization
+        self.set_title("Update Settings")
         self.set_border_width(10)
         self.set_modal(True)
         meso_site_store = gtk.ListStore(str, str)
         for loc in locations:
             meso_site_store.append([loc[0], loc[1]]) 
         
+        # site selection
+        lblSite = gtk.Label()
+        lblSite.set_label("Choose a Mesonet Site:")
         meso_site_combo = gtk.ComboBox(model=meso_site_store)
         meso_site_combo.connect("changed", self.on_name_combo_changed)
         meso_site_combo.set_active(initIndex)
-        
         cell = gtk.CellRendererText()
         meso_site_combo.pack_start(cell, True)
         meso_site_combo.add_attribute(cell, "text", 1)
+        hbox_site = gtk.HBox(spacing=6)
+        hbox_site.pack_start(lblSite)
+        hbox_site.pack_start(meso_site_combo)
         
-        btnOK = gtk.Button(stock = gtk.STOCK_OK)
-        btnOK.connect("clicked", self.onOK)
+        # update frequency
+        lblFreq = gtk.Label()
+        lblFreq.set_label("Select Update Frequency [ms] (5 minutes = 300,000):")
+        self.freqEntry = gtk.Entry()
+        self.freqEntry.set_text(str(prevFreq))
+        self.freqEntry.connect("changed", self.onEntryChanged)
+        hbox_freq = gtk.HBox(spacing=6)
+        hbox_freq.pack_start(lblFreq)
+        hbox_freq.pack_start(self.freqEntry)
+        
+        # form buttons
+        self.btnOK = gtk.Button(stock = gtk.STOCK_OK)
+        self.btnOK.connect("clicked", self.onOK)
         btnCancel = gtk.Button(stock = gtk.STOCK_CANCEL)
         btnCancel.connect("clicked", self.onCancel)
-        
-        hbox = gtk.HBox(spacing=6)
-        hbox.pack_start(btnOK)
-        hbox.pack_start(btnCancel)
+        hbox_btns = gtk.HBox(spacing=6)
+        hbox_btns.pack_start(self.btnOK)
+        hbox_btns.pack_start(btnCancel)
                 
+        # vbox to hold everything
         vbox = gtk.VBox(spacing=6)       
-        vbox.pack_start(meso_site_combo, False, False, 0)
-        vbox.pack_start(hbox, False, False, 0) 
-        
+        vbox.pack_start(hbox_site, False, False, 0)
+        vbox.pack_start(hbox_freq, False, False, 0)
+        vbox.pack_start(hbox_btns, False, False, 0) 
         self.add(vbox)
         
+        # initialize a flag for parent
         self.applyChanges = False
 
     def on_name_combo_changed(self, combo):
@@ -163,7 +181,18 @@ class settingsWindow(gtk.Window):
         else:
             #print "Entered: %s" % entry.get_text()
             entry = combo.get_child()
-            
+      
+    def onEntryChanged(self, entry):
+        s = self.freqEntry.get_text()
+        try:
+            i = int(s)
+            self.btnOK.set_label("OK")
+            self.btnOK.set_sensitive(True)
+        except:
+            self.btnOK.set_label("Invalid Update Frequency")
+            self.btnOK.set_sensitive(False)
+            return
+                    
     def onOK(self, widget):
         self.applyChanges = True
         self.hide()
@@ -447,7 +476,7 @@ class Weather(object):
         self.menu_curtime_item.set_label("Current update interval: %sms" % self.update_interval_ms)
 
     def update_settings(self, widget):
-        self.settings = settingsWindow(self.locations, self.mesonet_location_tag_index)
+        self.settings = settingsWindow(self.locations, self.mesonet_location_tag_index, self.update_interval_ms)
         self.settings.show_all()
         self.settings.connect("hide", self.handleClose)
         
