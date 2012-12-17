@@ -119,7 +119,7 @@ class solarPosition(object):
 # simple settings popup dialog
 class settingsWindow(gtk.Window):
     
-    def __init__(self, locations):
+    def __init__(self, locations, initIndex):
         gtk.Window.__init__(self) 
         self.set_title("Update Settings")
         
@@ -128,12 +128,10 @@ class settingsWindow(gtk.Window):
         meso_site_store = gtk.ListStore(str, str)
         for loc in locations:
             meso_site_store.append([loc[0], loc[1]]) 
-        #locations.append(["ADAX", "Ada", 34.8, -96.67])
-        #meso_site_store.append(['CARL', 'Lake Carl Blackwell'])
         
         meso_site_combo = gtk.ComboBox(model=meso_site_store)
         meso_site_combo.connect("changed", self.on_name_combo_changed)
-        meso_site_combo.set_active(0)
+        meso_site_combo.set_active(initIndex)
         
         cell = gtk.CellRendererText()
         meso_site_combo.pack_start(cell, True)
@@ -161,11 +159,11 @@ class settingsWindow(gtk.Window):
         if tree_iter != None:
             model = combo.get_model()
             self.ID = model[tree_iter][0]
-            print "Selected: ID=%s" % (self.ID)
+            #print "Selected: ID=%s" % (self.ID)
         else:
+            #print "Entered: %s" % entry.get_text()
             entry = combo.get_child()
-            print "Entered: %s" % entry.get_text()
-        
+            
     def onOK(self, widget):
         self.applyChanges = True
         self.hide()
@@ -182,6 +180,7 @@ class Weather(object):
 
     def __init__(self):
         
+        # ---------------------- BEGIN ORDER-INDEPENDENT INITIALIZATION ----------------------- #
         # init some global "constants"
         self.appname = "im-ok-weather"
         self.unknown = "??"
@@ -189,16 +188,8 @@ class Weather(object):
         self.degree_symbol = unichr(176)
         self.config_file_path = os.getenv("HOME") + "/.config/" + self.appname
         self.stdmeridian = 90
-        
-        # configurable parameters which may be overridden by contents of config file
-        self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
-        self.mesonet_location_tag = 'STIL'
-        
-        # other initialization
         self.storms = StormTypes()
-        
-        # override default configuration with saved data
-        self.read_config_file()
+        self.fillLocations()
         
         # init other global variables
         self.plotX = []
@@ -208,26 +199,33 @@ class Weather(object):
         Notify.init(self.appname)
         self.notification = Notify.Notification.new('', '', '') 
         
-        # init the gtk menu
+        # init the gtk menu -- need to wait until we have 
         self.init_menu()
         
         # init the app-indicator ability
         self.ind = appindicator.Indicator("im-ok-weather","", appindicator.CATEGORY_APPLICATION_STATUS)
         self.ind.set_status(appindicator.STATUS_ACTIVE)
         self.ind.set_menu(self.menu)
+        # ----------------------- END ORDER-INDEPENDENT INITIALIZATION ------------------------ #
         
-        # fill the mesonet list and update location
-        self.fillLocations()
+        # ----------------------- BEGIN ORDER-DEPENDENT INITIALIZATION ------------------------ #
+        # setup some default configurable parameters (may be overridden by contents of config file)
+        self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
+        self.mesonet_location_tag = 'STIL'
+                
+        # override default configuration with saved data
+        self.read_config_file()                
+        
+        # Update location-based info based on either default or overridden mesonet tag
         self.updateLocation(self.mesonet_location_tag)
                                     
         # do a refresh once initially
         self.do_a_refresh()
-        
-        # now that we have done a refresh, do 
-        
+        # ------------------------ END ORDER-DEPENDENT INITIALIZATION ------------------------- #
+                        
         # then set up the timer
         self.timer = gobject.timeout_add(self.update_interval_ms, self.do_a_refresh)
-
+        
     def fillLocations(self):
         self.locations = []
         self.locations.append(["ADAX", "Ada", 34.8, 96.67])
@@ -372,19 +370,19 @@ class Weather(object):
         self.menu_force_item = gtk.MenuItem("Refresh now")
         self.menu.append(self.menu_force_item)
         self.menu_force_item.show()
-        self.menu_force_item.connect("activate",self.do_a_refresh)
+        self.menu_force_item.connect("activate", self.do_a_refresh)
 
         # plot history
         self.menu_plot_item = gtk.MenuItem("Plot history")
         self.menu.append(self.menu_plot_item)
         self.menu_plot_item.show()
-        self.menu_plot_item.connect("activate",self.plot)
+        self.menu_plot_item.connect("activate", self.plot)
 
         # plot solar profile for today
         self.menu_solar_today_item = gtk.MenuItem("Plot today's solar")
         self.menu.append(self.menu_solar_today_item)
         self.menu_solar_today_item.show()
-        self.menu_solar_today_item.connect("activate",self.plotSolarToday)
+        self.menu_solar_today_item.connect("activate", self.plotSolarToday)
 
         # separator for cleanliness
         self.menu_sep_item = gtk.SeparatorMenuItem()
@@ -407,7 +405,7 @@ class Weather(object):
         self.menu_cur_item_loc.show()
                 
         # current interval item
-        self.menu_curtime_item = gtk.MenuItem("Current update interval: %sms" % self.update_interval_ms)
+        self.menu_curtime_item = gtk.MenuItem("Current update interval: %sms" % "Initializing...")
         self.menu.append(self.menu_curtime_item)
         self.menu_curtime_item.show()
         
@@ -425,7 +423,7 @@ class Weather(object):
         self.menu_settings_item = gtk.MenuItem("Update settings...")
         self.menu.append(self.menu_settings_item)
         self.menu_settings_item.show()
-        self.menu_settings_item.connect("activate",self.update_settings)
+        self.menu_settings_item.connect("activate", self.update_settings)
         
         # separator for cleanliness
         self.menu_sep_item3 = gtk.SeparatorMenuItem()
@@ -436,7 +434,7 @@ class Weather(object):
         self.menu_quit_item = gtk.MenuItem("Quit")
         self.menu.append(self.menu_quit_item)
         self.menu_quit_item.show()
-        self.menu_quit_item.connect("activate",self.destroy)
+        self.menu_quit_item.connect("activate", self.destroy)
 
     def init_dynamicSettings_menu(self):
         
@@ -449,7 +447,7 @@ class Weather(object):
         self.menu_curtime_item.set_label("Current update interval: %sms" % self.update_interval_ms)
 
     def update_settings(self, widget):
-        self.settings = settingsWindow(self.locations)
+        self.settings = settingsWindow(self.locations, self.mesonet_location_tag_index)
         self.settings.show_all()
         self.settings.connect("hide", self.handleClose)
         
@@ -459,9 +457,12 @@ class Weather(object):
         self.updateLocation(self.settings.ID)
         
     def updateLocation(self, key):
+        i = -1
         for loc in self.locations:
+            i += 1
             if loc[0] == key:
                 self.mesonet_location_tag = loc[0]
+                self.mesonet_location_tag_index = i
                 self.locale_name = loc[1]
                 self.latitude = loc[2]
                 self.longitude = loc[3]
