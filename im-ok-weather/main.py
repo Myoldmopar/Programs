@@ -115,7 +115,7 @@ class Storms():
                     lineNum += 1
                     
                     # process the warning type into a useful parameter
-                    ignore, thisWarnType = self.storms.getWarnType(lboxTitle)
+                    ignore, thisWarnType = self.getWarnType(lboxTitle)
                     
                     # if we aren't ignoring it, do more stuff
                     if not ignore:
@@ -139,16 +139,16 @@ class Storms():
         # expects a line like:
         # <div class="boxTitle">WarningOrWatchType</div>
         # with 'Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', or 'Severe Thunderstorm Watch'...any others are ignored
-        if self.storms.sTornadoWarning in str:
-            return False, self.storms.TornadoWarning
-        elif self.storms.sTornadoWatch in str:
-            return False, self.storms.TornadoWatch
-        elif self.storms.sTstormWarning in str:
-            return False, self.storms.TstormWarning
-        elif self.storms.sTstormWatch in str:
-            return False, self.storms.TstormWatch
+        if self.sTornadoWarning in str:
+            return False, self.TornadoWarning
+        elif self.sTornadoWatch in str:
+            return False, self.TornadoWatch
+        elif self.sTstormWarning in str:
+            return False, self.TstormWarning
+        elif self.sTstormWatch in str:
+            return False, self.TstormWatch
         else:
-            return True, self.storms.NoStorms
+            return True, self.NoStorms
    
 # solar position calculation class
 class solarPosition(object):
