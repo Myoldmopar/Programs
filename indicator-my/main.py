@@ -54,10 +54,10 @@ class my(object):
         self.menu = Gtk.Menu()
                 
         # suspend item - ensuring LID0 is DISABLED in /proc/acpi/wakeup
-        self.menu_suspend_lid_item = Gtk.MenuItem("Suspend - disable LID0")
+        self.menu_suspend_lid_item = Gtk.MenuItem("Disable LID0 Wakeup Switch")
         self.menu.append(self.menu_suspend_lid_item)
         self.menu_suspend_lid_item.show()
-        self.menu_suspend_lid_item.connect("activate", self.suspendlid)
+        self.menu_suspend_lid_item.connect("activate", self.disablelid)
 
         # timer item 
         self.menu_quick_timer_item = Gtk.MenuItem("Quick 15-min Timer")
@@ -97,8 +97,8 @@ class my(object):
         self.ql.child_append(self.item1)
         self.launcher.set_property("quicklist", self.ql)
             
-    def suspendlid(self, widget):
-        os.system("gksudo " + self.homeDir + "/bin/suspendLID.sh")  
+    def disablelid(self, widget):
+        os.system("gksudo " + self.homeDir + "/bin/disableLID.sh")  
     
     def startTimer(self):
         self.turnedOff = False
