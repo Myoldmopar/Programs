@@ -1,6 +1,8 @@
 #!/bin/bash
 
-if [ "`whoami`" != "root" ]; then
+THISUSER=`whoami`
+
+if [ "${THISUSER}" != "root" ]; then
     echo "Not root, can't do anything"
     exit 1
 fi
@@ -15,5 +17,4 @@ else
     echo "Either lid line wasn't there, or it was already disabled...not doing anything with the lid switch!"
 fi
 
-echo "Now suspending..."
-pm-suspend
+echo "Suspending can now be performed using normal system mechanisms"
