@@ -65,6 +65,12 @@ class my(object):
         self.menu_quick_timer_item.show()
         self.menu_quick_timer_item.connect("activate", self.startTimer1)
     
+        # gmail item
+        self.menu_gmail_item = Gtk.MenuItem("Open GMail")
+        self.menu.append(self.menu_gmail_item)
+        self.menu_gmail_item.show()
+        self.menu_gmail_item.connect("activate", self.openGMail2)
+    
         # ToDo list item
         self.menu_todo_item = Gtk.MenuItem("Open ToDo List")
         self.menu.append(self.menu_todo_item)
@@ -158,6 +164,9 @@ class my(object):
         self.chromeDesktop.set_property("quicklist", self.chromeql)        
             
     def openGMail(self, a, b):
+        os.system("google-chrome mail.google.com")
+
+    def openGMail2(self, widget):
         os.system("google-chrome mail.google.com")
         
     def myJabRef(self):
