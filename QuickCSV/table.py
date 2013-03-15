@@ -163,22 +163,23 @@ class TreeViewColumnExample(object):
         self.columns[-1].set_alignment(0.5)
              
         # create columns for the table
+        count = 0
         for i in range(len(data[0])):
+            count += 1
             self.columns.append(gtk.TreeViewColumn(str(i+1)))
             self.treeview.append_column(self.columns[-1])
             self.columns[-1].pack_start(self.cell, True)
             self.columns[-1].set_attributes(self.cell, text=i+1)
             self.columns[-1].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             self.columns[-1].set_fixed_width(100)
+            if count == 1:
+                self.columns[-1].set_sort_column_id(1)
 
         # now append the rows
         rowNum = 0
         for datum in data:
             rowNum += 1
             self.liststore.append([rowNum] + datum)
-                      
-        # Allow sorting on the column
-        self.columns[1].set_sort_column_id(0)
 
 def main():
     
