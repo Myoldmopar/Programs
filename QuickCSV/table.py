@@ -4,9 +4,6 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
-# this reference may be necessary to help dynamically set the treeview store model
-#http://stackoverflow.com/questions/6819271/change-gtkliststore-model-dynamically
-
 class TreeViewColumnExample(object):
 
     def __init__(self):
@@ -72,6 +69,9 @@ class TreeViewColumnExample(object):
         self.btnOK.connect("clicked", self.btnOK_clicked)
         self.window.connect("delete_event", gtk.main_quit)
         self.treeview.connect("key-press-event", self.treeview_key)
+                              
+        # now run
+        gtk.main()
                               
     def btnPasteCSV_clicked(self, widget):
         self.pasteIn()
@@ -149,47 +149,37 @@ class TreeViewColumnExample(object):
         # remove all the columns from the treeview
         for col in self.treeview.get_columns():
             self.treeview.remove_column(col)
-       
-        # instantiate a stored columns array in case we need to access them after the fact
-        self.columns = []
-             
+                    
         # add a row number column
-        self.columns.append(gtk.TreeViewColumn("Row"))
-        self.treeview.append_column(self.columns[-1])
-        self.columns[-1].pack_start(self.cellLeader, True)
-        self.columns[-1].set_attributes(self.cellLeader, text=0)
-        self.columns[-1].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
-        self.columns[-1].set_fixed_width(50)
-        self.columns[-1].set_alignment(0.5)
-             
+        col = gtk.TreeViewColumn("Row")
+        col.pack_start(self.cellLeader, True)
+        col.set_attributes(self.cellLeader, text=0)
+        col.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        col.set_fixed_width(50)
+        col.set_alignment(0.5)
+        self.treeview.append_column(col)
+        
         # create columns for the table
         count = 0
         for i in range(len(data[0])):
             count += 1
-            self.columns.append(gtk.TreeViewColumn(str(i+1)))
-            self.treeview.append_column(self.columns[-1])
-            self.columns[-1].pack_start(self.cell, True)
-            self.columns[-1].set_attributes(self.cell, text=i+1)
-            self.columns[-1].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
-            self.columns[-1].set_fixed_width(100)
+            col = gtk.TreeViewColumn(str(i+1))
+            col.pack_start(self.cell, True)
+            col.set_attributes(self.cell, text=i+1)
+            col.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+            col.set_fixed_width(100)
             if count == 1:
-                self.columns[-1].set_sort_column_id(1)
-
+                col.set_sort_column_id(1)
+            self.treeview.append_column(col)
+            
         # now append the rows
         rowNum = 0
         for datum in data:
             rowNum += 1
             self.liststore.append([rowNum] + datum)
 
-def main():
-    
-    # run gtk to process messages
-    gtk.main()
-
 if __name__ == "__main__":
     
     # create the example window
     tvcexample = TreeViewColumnExample()
-    
-    # then run it
-    main()
+ 
