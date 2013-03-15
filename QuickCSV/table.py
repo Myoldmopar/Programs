@@ -40,17 +40,39 @@ class TreeViewColumnExample(object):
         self.treeview.append_column(col)
         self.treeview.append_column(col2)
         
+        # create the buttons
+        self.btnPaste = gtk.Button(stock=gtk.STOCK_PASTE)
+        self.btnOK = gtk.Button(stock=gtk.STOCK_OK)
+        self.btnOK.set_label("OK, Done")
+        
+        # create the button hbox
+        self.buttonBox = gtk.HBox(homogeneous=False, spacing=4)
+        self.buttonBox.pack_start(self.btnPaste)
+        self.buttonBox.pack_start(self.btnOK)
+                
         # create the vbox to hold the treeview and other buttons
         self.vbox = gtk.VBox(homogeneous=False, spacing=4)
         self.vbox.pack_start(self.treeview)
+        self.vbox.pack_start(self.buttonBox)
         
         # add the main vbox to the window
         self.window.add(self.vbox)
         self.window.show_all()
         
         # connect signals
+        self.btnPaste.connect("clicked", self.btnPaste_clicked)
+        self.btnOK.connect("clicked", self.btnOK_clicked)
         self.window.connect("delete_event", self.delete_event)
         self.treeview.connect("button-press-event", self.treeview_click)
+                
+    def btnPaste_clicked(self, widget):
+        
+        self.pasteIn()
+                
+    def btnOK_clicked(self, widget):
+        
+        gtk.main_quit()
+        return False
                 
     def treeview_click(self, widget, event):
         
