@@ -24,7 +24,7 @@ class TreeViewColumnExample(object):
                 
         # create a liststore with string columns to use as the model
         self.liststore = gtk.ListStore(str,str) #gtk.ListStore(*[str]*len(data[0]))
-        self.liststore.append(["Click me to paste in", "Or me!"])
+        self.liststore.append(["Click me and press Ctrl-V", "Or click paste below"])
         
         # create a CellRenderers to render the data
         self.cell = gtk.CellRendererText()
@@ -63,8 +63,8 @@ class TreeViewColumnExample(object):
         self.btnPaste.connect("clicked", self.btnPaste_clicked)
         self.btnOK.connect("clicked", self.btnOK_clicked)
         self.window.connect("delete_event", self.delete_event)
-        self.treeview.connect("button-press-event", self.treeview_click)
-                
+        self.treeview.connect("key-press-event", self.treeview_key)
+                              
     def btnPaste_clicked(self, widget):
         
         self.pasteIn()
@@ -73,11 +73,12 @@ class TreeViewColumnExample(object):
         
         gtk.main_quit()
         return False
-                
-    def treeview_click(self, widget, event):
         
-        # call the paste routine
-        self.pasteIn() 
+    def treeview_key(self, widget, event):
+        
+        if event.keyval == 118:
+            if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
+                self.pasteIn()
         
     def pasteIn(self):
         
