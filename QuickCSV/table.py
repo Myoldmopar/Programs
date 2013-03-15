@@ -20,11 +20,11 @@ class TreeViewColumnExample(object):
         
         # Create a new window and title it
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_title("CSV Paster")
+        self.window.set_title("My Paste Bin")
                 
         # create a liststore with string columns to use as the model
         self.liststore = gtk.ListStore(str,str) #gtk.ListStore(*[str]*len(data[0]))
-        self.liststore.append(["Click me and press Ctrl-V", "Or click paste below"])
+        self.liststore.append(["Ctrl-V for CSV Data", "Ctl-T for TSV data"])
         
         # create a CellRenderers to render the data
         self.cell = gtk.CellRendererText()
@@ -41,13 +41,14 @@ class TreeViewColumnExample(object):
         self.treeview.append_column(col2)
         
         # create the buttons
-        self.btnPaste = gtk.Button(stock=gtk.STOCK_PASTE)
-        self.btnOK = gtk.Button(stock=gtk.STOCK_OK)
-        self.btnOK.set_label("OK, Done")
-        
+        self.btnPasteCSV = gtk.Button(label="Paste CSV")
+        self.btnPasteTSV = gtk.Button(label="Paste TSV")
+        self.btnOK = gtk.Button(label="OK, Done")
+                
         # create the button hbox
         self.buttonBox = gtk.HBox(homogeneous=False, spacing=4)
-        self.buttonBox.pack_start(self.btnPaste)
+        self.buttonBox.pack_start(self.btnPasteCSV)
+        self.buttonBox.pack_start(self.btnPasteTSV)
         self.buttonBox.pack_start(self.btnOK)
                 
         # create the vbox to hold the treeview and other buttons
@@ -60,27 +61,31 @@ class TreeViewColumnExample(object):
         self.window.show_all()
         
         # connect signals
-        self.btnPaste.connect("clicked", self.btnPaste_clicked)
+        self.btnPasteCSV.connect("clicked", self.btnPasteCSV_clicked)
+        self.btnPasteTSV.connect("clicked", self.btnPasteTSV_clicked)
         self.btnOK.connect("clicked", self.btnOK_clicked)
         self.window.connect("delete_event", self.delete_event)
         self.treeview.connect("key-press-event", self.treeview_key)
                               
-    def btnPaste_clicked(self, widget):
-        
+    def btnPasteCSV_clicked(self, widget):
         self.pasteIn()
                 
-    def btnOK_clicked(self, widget):
+    def btnPasteTSV_clicked(self, widget):
+        self.pasteIn("\t")
         
+    def btnOK_clicked(self, widget):
         gtk.main_quit()
         return False
         
     def treeview_key(self, widget, event):
-        
         if event.keyval == 118:
             if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
                 self.pasteIn()
+        elif event.keyval == 116:
+            if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
+                self.pasteIn("\t")
         
-    def pasteIn(self):
+    def pasteIn(self, delimiter=","):
         
         # use this for testing
         #data = [ ["1","2","3"], ["4","5","6","7"] ]
@@ -99,7 +104,7 @@ class TreeViewColumnExample(object):
         data_raw = []
         maxLen = 0
         for row in rows:
-            vals = row.split(",")
+            vals = row.split(delimiter)
             maxLen = max(len(vals), maxLen)
             data_raw.append(vals)   
             
