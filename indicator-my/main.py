@@ -8,6 +8,7 @@
 import os
 import sys
 from gi.repository import Dbusmenu, Unity, GObject, Notify, Gtk, AppIndicator3 as appindicator
+import webbrowser
 
 class my(object):
     
@@ -41,6 +42,9 @@ class my(object):
         
         # update the indicator label with new data
         self.ind.set_label("MY", "")
+
+        # we'll also do some other Unity mods
+        self.myChrome()
                 
         # dang, since I have jabref building now, I'm doing that too!
         self.myJabRef()        
@@ -61,6 +65,12 @@ class my(object):
         self.menu.append(self.menu_quick_timer_item)
         self.menu_quick_timer_item.show()
         self.menu_quick_timer_item.connect("activate", self.startTimer1)
+    
+        # gmail item
+        self.menu_gmail_item = Gtk.MenuItem("Open GMail")
+        self.menu.append(self.menu_gmail_item)
+        self.menu_gmail_item.show()
+        self.menu_gmail_item.connect("activate", self.openGMail2)
     
         # ToDo list item
         self.menu_todo_item = Gtk.MenuItem("Open ToDo List")
@@ -143,7 +153,23 @@ class my(object):
     def openToDoList(self, widget):
         if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
             os.system("xdg-open " + self.homeDir + "/Documents/ToDoList/todo.todo")
-    
+     
+    def myChrome(self):
+        self.chromeDesktop = Unity.LauncherEntry.get_for_desktop_id("google-chrome.desktop")
+        self.chromeql = Dbusmenu.Menuitem.new()
+        self.chromeitem0 = Dbusmenu.Menuitem.new()
+        self.chromeitem0.property_set(Dbusmenu.MENUITEM_PROP_LABEL, "Open GMail")
+        self.chromeitem0.property_set_bool(Dbusmenu.MENUITEM_PROP_VISIBLE, True)
+        self.chromeitem0.connect("item-activated", self.openGMail)
+        self.chromeql.child_append(self.chromeitem0)
+        self.chromeDesktop.set_property("quicklist", self.chromeql)        
+            
+    def openGMail(self, a, b):
+        webbrowser.open("http://mail.google.com")
+
+    def openGMail2(self, widget):
+        webbrowser.open("http://mail.google.com")
+            
     def myJabRef(self):
         self.jabrefDesktop = Unity.LauncherEntry.get_for_desktop_id("jabref.desktop")
         self.jabrefql = Dbusmenu.Menuitem.new()
