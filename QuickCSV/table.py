@@ -9,25 +9,22 @@ import gtk
 
 class TreeViewColumnExample(object):
 
-    # close the window and quit
-    def delete_event(self, widget, event, data=None):
-        
-        # clean up
-        gtk.main_quit()
-        return False
-
     def __init__(self):
         
-        # Create a new window and title it
+        # Create a new window and title it and center it
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_title("My Paste Bin")
-                
+        self.window.set_title("My Delimiter Bin")
+        self.window.set_position(gtk.WIN_POS_CENTER)
+        self.window.set_default_size(500,350)
+        
         # create a liststore with string columns to use as the model
         self.liststore = gtk.ListStore(str,str) #gtk.ListStore(*[str]*len(data[0]))
         self.liststore.append(["Ctrl-V for CSV Data", "Ctl-T for TSV data"])
         
         # create a CellRenderers to render the data
         self.cell = gtk.CellRendererText()
+        self.cell.wrap_width = 100
+        self.cell.wrap_mode = gtk.WRAP_WORD
 
         # create the TreeView using liststore
         self.treeview = gtk.TreeView(self.liststore)
@@ -39,6 +36,11 @@ class TreeViewColumnExample(object):
         col2.set_attributes(self.cell, text=1)
         self.treeview.append_column(col)
         self.treeview.append_column(col2)
+        
+        # create a scrollable container for the treeview
+        self.scrollTree = gtk.ScrolledWindow()
+        self.scrollTree.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_ALWAYS)
+        self.scrollTree.add(self.treeview)
         
         # create the buttons
         self.btnPasteCSV = gtk.Button(label="Paste CSV")
@@ -55,8 +57,8 @@ class TreeViewColumnExample(object):
                 
         # create the vbox to hold the treeview and other buttons
         self.vbox = gtk.VBox(homogeneous=False, spacing=4)
-        self.vbox.pack_start(self.treeview)
-        self.vbox.pack_start(self.buttonBox)
+        self.vbox.pack_start(self.scrollTree)
+        self.vbox.pack_start(self.buttonBox, False)
         
         # add the main vbox to the window
         self.window.add(self.vbox)
@@ -67,7 +69,7 @@ class TreeViewColumnExample(object):
         self.btnPasteTSV.connect("clicked", self.btnPasteTSV_clicked)
         self.btnPasteHeader.connect("clicked", self.btnPasteHeader_clicked)
         self.btnOK.connect("clicked", self.btnOK_clicked)
-        self.window.connect("delete_event", self.delete_event)
+        self.window.connect("delete_event", gtk.main_quit)
         self.treeview.connect("key-press-event", self.treeview_key)
                               
     def btnPasteCSV_clicked(self, widget):
@@ -93,16 +95,16 @@ class TreeViewColumnExample(object):
         if response == gtk.RESPONSE_OK:
             fileName = chooser.get_filename()
             f = open(fileName)
-            line = f.readline()
+            line = f.readline().replace(",","\n")
+            f.close()
             self.pasteIn(dataIn=line)
         chooser.destroy()
         
     def treeview_key(self, widget, event):
-        if event.keyval == 118:
-            if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
+        if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
+            if event.keyval == 118:
                 self.pasteIn()
-        elif event.keyval == 116:
-            if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
+            elif event.keyval == 116:
                 self.pasteIn("\t")
         
     def pasteIn(self, delimiter=",", dataIn=None):
@@ -156,6 +158,8 @@ class TreeViewColumnExample(object):
             self.treeview.append_column(self.columns[-1])
             self.columns[-1].pack_start(self.cell, True)
             self.columns[-1].set_attributes(self.cell, text=i)
+            self.columns[-1].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+            self.columns[-1].set_fixed_width(100)
 
         # now append the rows
         for datum in data:
