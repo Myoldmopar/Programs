@@ -43,12 +43,14 @@ class TreeViewColumnExample(object):
         # create the buttons
         self.btnPasteCSV = gtk.Button(label="Paste CSV")
         self.btnPasteTSV = gtk.Button(label="Paste TSV")
+        self.btnPasteHeader = gtk.Button(label="CSV Header")
         self.btnOK = gtk.Button(label="OK, Done")
                 
         # create the button hbox
         self.buttonBox = gtk.HBox(homogeneous=False, spacing=4)
         self.buttonBox.pack_start(self.btnPasteCSV)
         self.buttonBox.pack_start(self.btnPasteTSV)
+        self.buttonBox.pack_start(self.btnPasteHeader)
         self.buttonBox.pack_start(self.btnOK)
                 
         # create the vbox to hold the treeview and other buttons
@@ -63,6 +65,7 @@ class TreeViewColumnExample(object):
         # connect signals
         self.btnPasteCSV.connect("clicked", self.btnPasteCSV_clicked)
         self.btnPasteTSV.connect("clicked", self.btnPasteTSV_clicked)
+        self.btnPasteHeader.connect("clicked", self.btnPasteHeader_clicked)
         self.btnOK.connect("clicked", self.btnOK_clicked)
         self.window.connect("delete_event", self.delete_event)
         self.treeview.connect("key-press-event", self.treeview_key)
@@ -77,6 +80,23 @@ class TreeViewColumnExample(object):
         gtk.main_quit()
         return False
         
+    def btnPasteHeader_clicked(self, widget):
+        
+        # create the file chooser dialog
+        chooser = gtk.FileChooserDialog(title="Choose a CSV file", action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
+        chooser.set_select_multiple(False)
+        chooser.set_default_response(gtk.RESPONSE_OK)
+        filefilter = gtk.FileFilter()
+        filefilter.add_pattern("*.csv")
+        chooser.add_filter(filefilter)
+        response = chooser.run()
+        if response == gtk.RESPONSE_OK:
+            fileName = chooser.get_filename()
+            f = open(fileName)
+            line = f.readline()
+            self.pasteIn(dataIn=line)
+        chooser.destroy()
+        
     def treeview_key(self, widget, event):
         if event.keyval == 118:
             if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
@@ -85,16 +105,19 @@ class TreeViewColumnExample(object):
             if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
                 self.pasteIn("\t")
         
-    def pasteIn(self, delimiter=","):
+    def pasteIn(self, delimiter=",", dataIn=None):
         
         # use this for testing
         #data = [ ["1","2","3"], ["4","5","6","7"] ]
         
         # get the text from the clipboard, if it exists
-        clipboard = gtk.clipboard_get()
-        text = clipboard.wait_for_text()
-        if text == None:
-            return #...some warning
+        if not dataIn:
+            clipboard = gtk.clipboard_get()
+            text = clipboard.wait_for_text()
+            if text == None:
+                return #...some warning
+        else:
+            text = dataIn
             
         # split it into rows, remove blank rows
         rows = text.split('\n')
