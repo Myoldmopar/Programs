@@ -18,13 +18,14 @@ class TreeViewColumnExample(object):
         self.window.set_default_size(500,350)
         
         # create a liststore with string columns to use as the model
-        self.liststore = gtk.ListStore(str,str) #gtk.ListStore(*[str]*len(data[0]))
+        self.liststore = gtk.ListStore(str,str) 
         self.liststore.append(["Ctrl-V for CSV Data", "Ctl-T for TSV data"])
         
         # create a CellRenderers to render the data
         self.cell = gtk.CellRendererText()
-        self.cell.wrap_width = 100
-        self.cell.wrap_mode = gtk.WRAP_WORD
+        self.cellLeader = gtk.CellRendererText()
+        self.cellLeader.set_property('cell-background', 'gray')
+        self.cellLeader.set_property('xalign', 0.5)
 
         # create the TreeView using liststore
         self.treeview = gtk.TreeView(self.liststore)
@@ -140,7 +141,7 @@ class TreeViewColumnExample(object):
             data.append(row2)
        
         # create a new list store sized to this data
-        self.liststore = gtk.ListStore(*[str]*len(data[0]))
+        self.liststore = gtk.ListStore(*[str]*(maxLen+1))
         
         # reset the treeview to this liststore
         self.treeview.set_model(self.liststore)
@@ -152,21 +153,32 @@ class TreeViewColumnExample(object):
         # instantiate a stored columns array in case we need to access them after the fact
         self.columns = []
              
+        # add a row number column
+        self.columns.append(gtk.TreeViewColumn("Row"))
+        self.treeview.append_column(self.columns[-1])
+        self.columns[-1].pack_start(self.cellLeader, True)
+        self.columns[-1].set_attributes(self.cellLeader, text=0)
+        self.columns[-1].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
+        self.columns[-1].set_fixed_width(50)
+        self.columns[-1].set_alignment(0.5)
+             
         # create columns for the table
         for i in range(len(data[0])):
             self.columns.append(gtk.TreeViewColumn(str(i+1)))
             self.treeview.append_column(self.columns[-1])
             self.columns[-1].pack_start(self.cell, True)
-            self.columns[-1].set_attributes(self.cell, text=i)
+            self.columns[-1].set_attributes(self.cell, text=i+1)
             self.columns[-1].set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             self.columns[-1].set_fixed_width(100)
 
         # now append the rows
+        rowNum = 0
         for datum in data:
-            self.liststore.append(datum)
+            rowNum += 1
+            self.liststore.append([rowNum] + datum)
                       
         # Allow sorting on the column
-        self.columns[0].set_sort_column_id(0)
+        self.columns[1].set_sort_column_id(0)
 
 def main():
     
