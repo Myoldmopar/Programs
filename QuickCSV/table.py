@@ -69,7 +69,7 @@ class TreeViewColumnExample(object):
         self.btnPasteHeader.connect("clicked", self.btnPasteHeader_clicked)
         self.btnOK.connect("clicked", self.btnOK_clicked)
         self.window.connect("delete_event", gtk.main_quit)
-        self.treeview.connect("key-press-event", self.treeview_key)
+        self.window.connect("key-press-event", self.key_press)
                               
         # now run
         gtk.main()
@@ -102,12 +102,15 @@ class TreeViewColumnExample(object):
             self.pasteIn(dataIn=line)
         chooser.destroy()
         
-    def treeview_key(self, widget, event):
-        if event.state == gtk.gdk.CONTROL_MASK | gtk.gdk.MOD2_MASK:
-            if event.keyval == 118:
+    def key_press(self, widget, event):        
+        keyname = gtk.gdk.keyval_name(event.keyval)
+        if event.state & gtk.gdk.CONTROL_MASK:
+            if keyname == 'v':
                 self.pasteIn()
-            elif event.keyval == 116:
+            elif keyname == 't':
                 self.pasteIn("\t")
+            elif keyname == 'q':
+                gtk.main_quit()
         
     def pasteIn(self, delimiter=",", dataIn=None):
         
