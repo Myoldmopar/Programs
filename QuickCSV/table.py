@@ -172,6 +172,7 @@ class TreeViewColumnExample(object):
             col.set_attributes(self.cell, text=i+1)
             col.set_sizing(gtk.TREE_VIEW_COLUMN_FIXED)
             col.set_fixed_width(100)
+            col.set_resizable(True)
             if count == 1:
                 col.set_sort_column_id(1)
             self.treeview.append_column(col)
