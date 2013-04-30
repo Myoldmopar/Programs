@@ -417,7 +417,11 @@ class Weather(object):
         
         # init the notification system
         Notify.init(self.appname)
-        self.notification = Notify.Notification.new('', '', '') 
+        try:
+            self.notification = Notify.Notification.new('', '', '') 
+            self.notifs = True
+        except:
+            self.notifs = False
         
         # init the gtk menu -- need to wait until we have 
         self.init_menu()
@@ -643,22 +647,22 @@ class Weather(object):
         
         # send a notification message
         sNotify = "Temperature:\t%s\nWind Speed:\t%s\nWind Direction:\t%s" % (str(temp), str(windspeed), winddir)
-        #print theseWarnings
-        if not theseWarnings:
-            self.notification.update(self.locale_name + " Weather Updated", sNotify, '') 
-            self.notification.show()
-        elif self.storms.TornadoWarning in theseWarnings:
-            self.notification.update(self.locale_name + " Weather Updated", "TORNADO WARNING!", '') 
-            self.notification.show()
-        elif self.storms.TornadoWatch in theseWarnings:
-            self.notification.update(self.locale_name + " Weather Updated", "Tornado Watch!", '') 
-            self.notification.show()
-        elif self.storms.TstormWarning in theseWarnings:
-            self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Warning!", '') 
-            self.notification.show()
-        elif self.storms.TstormWatch in theseWarnings:
-            self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Watch", '') 
-            self.notification.show()
+        if self.notifs:
+            if not theseWarnings:
+                self.notification.update(self.locale_name + " Weather Updated", sNotify, '') 
+                self.notification.show()
+            elif self.storms.TornadoWarning in theseWarnings:
+                self.notification.update(self.locale_name + " Weather Updated", "TORNADO WARNING!", '') 
+                self.notification.show()
+            elif self.storms.TornadoWatch in theseWarnings:
+                self.notification.update(self.locale_name + " Weather Updated", "Tornado Watch!", '') 
+                self.notification.show()
+            elif self.storms.TstormWarning in theseWarnings:
+                self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Warning!", '') 
+                self.notification.show()
+            elif self.storms.TstormWatch in theseWarnings:
+                self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Watch", '') 
+                self.notification.show()
                 
         # store the current time and temperature for plotting
         thistime_num = matplotlib.dates.date2num(thistime)

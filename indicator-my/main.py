@@ -43,7 +43,8 @@ class my(object):
         self.ind.set_menu(self.menu)
         
         # update the indicator label with new data
-        self.ind.set_label("MY", "")
+        self.ind.set_icon_full(self.homeDir + "/bin/ubuntu.png", "my.desktop")
+        #self.ind.set_label("MY", "")
 
         # we'll also do some other Unity mods
         self.myChrome()
