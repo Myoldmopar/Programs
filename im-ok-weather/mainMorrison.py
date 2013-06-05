@@ -22,6 +22,7 @@ import StringIO
 import math
 
 # a class with storm enumeration and a few workers
+
 class Storms():
     
     def __init__(self):
@@ -77,10 +78,10 @@ class Storms():
             print "Couldn't read severe site"
             return watchWarnings
         # this is the title of the state box where warnings would be found
-        sState='<a name="Oklahoma"></a>'
+        sState='<a name="Colorado"></a>'
         # check if oklahoma is even in the entire contents
         if not sState in s:
-            print "Didn't find Oklahoma in the severe list"
+            print "Didn't find Colorado in the severe list"
             return watchWarnings
         # Start reading lines, first create a string IO object
         buff = StringIO.StringIO(s)
@@ -130,6 +131,8 @@ class Storms():
             line = buff.readline()
             lineNum += 1
         
+        #TODO: Verify that storms are read in properly
+        #watchWarnings.append(self.TstormWarning)
         return watchWarnings
             
     def getWarnType(self, str):
@@ -227,91 +230,6 @@ class solarPosition(object):
     def output(self, string):
         print string
 
-# simple settings popup dialog
-class settingsWindow(gtk.Window):
-    
-    def __init__(self, locations, initIndex, prevFreq):
-        gtk.Window.__init__(self) 
-        
-        # initialization
-        self.set_title("Update Settings")
-        self.set_border_width(10)
-        self.set_modal(True)
-        meso_site_store = gtk.ListStore(str, str)
-        for loc in locations:
-            meso_site_store.append([loc[0], loc[1]]) 
-        
-        # site selection
-        lblSite = gtk.Label()
-        lblSite.set_label("Choose a Mesonet Site:")
-        meso_site_combo = gtk.ComboBox(model=meso_site_store)
-        meso_site_combo.connect("changed", self.on_name_combo_changed)
-        meso_site_combo.set_active(initIndex)
-        cell = gtk.CellRendererText()
-        meso_site_combo.pack_start(cell, True)
-        meso_site_combo.add_attribute(cell, "text", 1)
-        hbox_site = gtk.HBox(spacing=6)
-        hbox_site.pack_start(lblSite)
-        hbox_site.pack_start(meso_site_combo)
-        
-        # update frequency
-        lblFreq = gtk.Label()
-        lblFreq.set_label("Select Update Frequency [ms] (5 minutes = 300,000):")
-        self.freqEntry = gtk.Entry()
-        self.freqEntry.set_text(str(prevFreq))
-        self.freqEntry.connect("changed", self.onEntryChanged)
-        hbox_freq = gtk.HBox(spacing=6)
-        hbox_freq.pack_start(lblFreq)
-        hbox_freq.pack_start(self.freqEntry)
-        
-        # form buttons
-        self.btnOK = gtk.Button(stock = gtk.STOCK_OK)
-        self.btnOK.connect("clicked", self.onOK)
-        btnCancel = gtk.Button(stock = gtk.STOCK_CANCEL)
-        btnCancel.connect("clicked", self.onCancel)
-        hbox_btns = gtk.HBox(spacing=6)
-        hbox_btns.pack_start(self.btnOK)
-        hbox_btns.pack_start(btnCancel)
-                
-        # vbox to hold everything
-        vbox = gtk.VBox(spacing=6)       
-        vbox.pack_start(hbox_site, False, False, 0)
-        vbox.pack_start(hbox_freq, False, False, 0)
-        vbox.pack_start(hbox_btns, False, False, 0) 
-        self.add(vbox)
-        
-        # initialize a flag for parent
-        self.applyChanges = False
-
-    def on_name_combo_changed(self, combo):
-        tree_iter = combo.get_active_iter()
-        if tree_iter != None:
-            model = combo.get_model()
-            self.ID = model[tree_iter][0]
-            #print "Selected: ID=%s" % (self.ID)
-        else:
-            #print "Entered: %s" % entry.get_text()
-            entry = combo.get_child()
-      
-    def onEntryChanged(self, entry):
-        s = self.freqEntry.get_text()
-        try:
-            i = int(s)
-            self.btnOK.set_label("OK")
-            self.btnOK.set_sensitive(True)
-        except:
-            self.btnOK.set_label("Invalid Update Frequency")
-            self.btnOK.set_sensitive(False)
-            return
-                    
-    def onOK(self, widget):
-        self.applyChanges = True
-        self.hide()
-        
-    def onCancel(self, widget):
-        self.applyChanges = False
-        self.hide()
-
 # plotting operation
 class plotting():
     
@@ -404,14 +322,21 @@ class Weather(object):
         # init some global "constants"
         self.appname = "im-ok-weather"
         self.unknown = "??"
-        self.url = "http://www.mesonet.org/data/public/mesonet/current/current.csv.txt"
+        self.locale_name = "Morrison"
+        self.url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID=KCOMORRI9"
         self.degree_symbol = unichr(176)
         self.config_file_path = os.getenv("HOME") + "/.config/" + self.appname
-        self.stdmeridian = 90
+        self.stdmeridian = 105
         self.storms = Storms()
-        self.fillLocations()
-        self.plotter = plotting()
         
+        self.latitude = 39.651667
+        self.longitude = -105.190278
+        self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
+        
+        self.plotter = plotting()
+        self.plotter.setLocation(self.latitude, self.longitude)
+        self.county = self.storms.getCounty(self.latitude, self.longitude)
+                
         # init the notification system
         Notify.init(self.appname)
         try:
@@ -427,22 +352,9 @@ class Weather(object):
         self.ind = appindicator.Indicator("im-ok-weather","", appindicator.CATEGORY_APPLICATION_STATUS)
         self.ind.set_status(appindicator.STATUS_ACTIVE)
         self.ind.set_menu(self.menu)
-        # ----------------------- END ORDER-INDEPENDENT INITIALIZATION ------------------------ #
-        
-        # ----------------------- BEGIN ORDER-DEPENDENT INITIALIZATION ------------------------ #
-        # setup some default configurable parameters (may be overridden by contents of config file)
-        self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
-        self.mesonet_location_tag = 'STIL'
-                
-        # override default configuration with saved data
-        self.read_config_file()                
-        
-        # Update location-based info based on either default or overridden mesonet tag
-        self.updateLocation(self.mesonet_location_tag)
                                     
         # do a refresh once initially
         self.do_a_refresh()
-        # ------------------------ END ORDER-DEPENDENT INITIALIZATION ------------------------- #
                         
         # then set up the timer
         self.timer = gobject.timeout_add(self.update_interval_ms, self.do_a_refresh)
@@ -474,42 +386,11 @@ class Weather(object):
         self.menu_sep_item = gtk.SeparatorMenuItem()
         self.menu.append(self.menu_sep_item)
         self.menu_sep_item.show()
-        
-        # current location item
-        self.menu_cur_item = gtk.MenuItem("Current location keyword: %s" % "Initializing...")
-        self.menu.append(self.menu_cur_item)
-        self.menu_cur_item.show()
-        
-        # current location name
-        self.menu_cur_item_name = gtk.MenuItem("Current location name: %s" % "Initializing...")
-        self.menu.append(self.menu_cur_item_name)
-        self.menu_cur_item_name.show()
-        
-        # current location location
-        self.menu_cur_item_loc = gtk.MenuItem("Current location (lat,long): (%s, %s)" % ("...", "..."))
-        self.menu.append(self.menu_cur_item_loc)
-        self.menu_cur_item_loc.show()
-                
-        # current interval item
-        self.menu_curtime_item = gtk.MenuItem("Current update interval: %sms" % "Initializing...")
-        self.menu.append(self.menu_curtime_item)
-        self.menu_curtime_item.show()
-        
-        # separator for cleanliness
-        self.menu_sep_item2 = gtk.SeparatorMenuItem()
-        self.menu.append(self.menu_sep_item2)
-        self.menu_sep_item2.show()
-        
+         
         # updated time item
         self.menu_update_item = gtk.MenuItem("Initializing...")
         self.menu.append(self.menu_update_item)
         self.menu_update_item.show()
-                
-        # item to update settings
-        self.menu_settings_item = gtk.MenuItem("Update settings...")
-        self.menu.append(self.menu_settings_item)
-        self.menu_settings_item.show()
-        self.menu_settings_item.connect("activate", self.update_settings)
         
         # separator for cleanliness
         self.menu_sep_item3 = gtk.SeparatorMenuItem()
@@ -522,110 +403,84 @@ class Weather(object):
         self.menu_quit_item.show()
         self.menu_quit_item.connect("activate", self.destroy)
 
-    def init_dynamicSettings_menu(self):
-        
-        # current location item
-        self.menu_cur_item.set_label("Current location keyword: %s" % self.mesonet_location_tag)
-        self.menu_cur_item_name.set_label("Current location name: %s" % self.locale_name)
-        self.menu_cur_item_loc.set_label("Current location (latitude, long): (%s, %s)" % (self.latitude, self.longitude))
-        
-        # current interval item
-        self.menu_curtime_item.set_label("Current update interval: %sms" % self.update_interval_ms)
-
-    def read_config_file(self):
-        if not os.path.exists(self.config_file_path):
-            return          
-        config = ConfigObj(self.config_file_path)
-        self.update_interval_ms = int(config['update_interval_ms'])
-        self.mesonet_location_tag = config['mesonet_location_tag']
-        
-    def write_config_file(self):
-        config = ConfigObj(self.config_file_path)
-        config['update_interval_ms'] = self.update_interval_ms
-        config['mesonet_location_tag'] = self.mesonet_location_tag
-        config.write()
-
-    def update_settings(self, widget):
-        self.settings = settingsWindow(self.locations, self.mesonet_location_tag_index, self.update_interval_ms)
-        self.settings.show_all()
-        self.settings.connect("hide", self.handleClose)
-        
-    def handleClose(self, widget):
-        if not self.settings.applyChanges:
-            return
-        self.updateLocation(self.settings.ID)
-        
-    def updateLocation(self, key):
-        i = -1
-        for loc in self.locations:
-            i += 1
-            if loc[0] == key:
-                self.mesonet_location_tag = loc[0]
-                self.mesonet_location_tag_index = i
-                self.locale_name = loc[1]
-                self.latitude = loc[2]
-                self.longitude = loc[3]
-                self.init_dynamicSettings_menu()
-                self.county = self.storms.getCounty(self.latitude, self.longitude)
-                self.do_a_refresh()
-                self.plotter.setLocation(self.latitude, self.longitude)
-                self.write_config_file()
-                return
-        # shouldn't get here
-        print "Uh, oh! Bad key passed to updateLocation"
-                
     def do_a_refresh(self, widget=None):
-                
-        try:        
-            
-            # open the site, and read the results into a variable
-            f = urllib.urlopen(self.url)
-            result = f.read()
-            
-            # split the result into a list, one item per line of the original data
-            listA = result.split('\n')
-            
-            # parse out Stillwater's data
-            expr = re.compile('^'+self.mesonet_location_tag)
-            data = filter(expr.search,listA)
-            tokens = [x.strip() for x in data[0].split(',')]
-            
-            # check if there is even an entry for this locale
-            if tokens[1].strip() == '':
-                self.ind.set_label(" No Data for: " + self.mesonet_location_tag)
-                return
-            
-            # get this valid location name
-            self.locale_name = tokens[1]
-            
-            # check each token, assign the unknown status if it is missing
-            # dry bulb temperature
-            if tokens[10].strip() == '':
-                temp = self.unknown
-            else:
-                temp = int(tokens[10])
-                
-            # wind speed
-            if tokens[16].strip() == '':
-                windspeed = self.unknown
-            else:
-                windspeed = int(tokens[16])
-                
-            # wind direction
-            if tokens[15].strip() == '':
-                winddir = self.unknown
-                arrow = ""
-            else:
-                winddir = str(tokens[15])
-                # get a nice looking unicode arrow character based on wind direction
-                arrow = self.get_arrow(winddir)
+
+        # init line counter
+        lineNum = 0
+       
+        # flag strings
+        flagTemp = '<td>Temperature:</td>'
+        flagWindSpeed = '<td>Wind Speed:</td>'
+        flagWindDir = '<td>Wind:</td>'
+        flagEnd = '</html>'
         
+        # init return values
+        temp = self.unknown
+        windspeed = self.unknown
+        winddir = self.unknown
+        arrow = ""
+       
+        # try to read the data
+        try:
+            # open the connection to wunderground
+            f = urllib.urlopen(self.url)
+            # read the results
+            s = f.read()
         except:
+            # just leave the return values as init'd
+            print "Couldn't read weather site"
+            s = ""
+
+        # only start parsing if we actually read something
+        if s:
+            try:
             
-            temp = self.unknown
-            windspeed = self.unknown
-            winddir = self.unknown
-            arrow = ""
+                # Start reading lines, first create a string IO object
+                buff = StringIO.StringIO(s)
+                
+                # read the first line to get things started
+                line = buff.readline()
+                lineNum += 1
+                
+                # then start looping over the string until we run out of lines
+                while line:
+                    if line.strip() == flagTemp:
+                        dummy = buff.readline()
+                        lineNum += 1
+                        sTemperatureLine = buff.readline()
+                        lineNum += 1
+                        sTemp = sTemperatureLine.split('>')[2].split('<')[0]
+                        fTemp = float(sTemp)
+                        temp = int(fTemp)
+                        
+                    elif line.strip() == flagWindSpeed:
+                        dummy = buff.readline()
+                        lineNum += 1
+                        sWindSpeedLine = buff.readline()
+                        lineNum += 1
+                        sWind = sWindSpeedLine.split('>')[2].split('<')[0]
+                        fWind = float(sWind)
+                        windspeed = int(fWind)
+                        
+                    elif line.strip() == flagWindDir:
+                        sWindDirLine = buff.readline()
+                        lineNum += 1
+                        winddir = sWindDirLine.split('>')[1].split('<')[0]
+                        arrow = self.get_arrow(winddir)
+                        break
+
+                    elif flagEnd in line:
+                        break
+                                
+                    # get the next line if it exists
+                    line = buff.readline()
+                    lineNum += 1
+            
+            except:
+                
+                # just pass along with whatever has been successfully set
+                # this will help clue into the problem item
+                pass
             
         # create an update string
         sIndicator = " %s%sF  %s%s " % (str(temp), self.degree_symbol, str(windspeed), arrow)
@@ -638,6 +493,7 @@ class Weather(object):
         
         # check for severe weather
         theseWarnings = self.storms.getWatchWarnings(self.county)
+        #print theseWarnings 
                  
         # update the indicator label with new data
         self.ind.set_label(sIndicator)
@@ -668,137 +524,15 @@ class Weather(object):
                 
         # callback return value, so that gobject knows it can continue cycling
         return True
-  
-    def fillLocations(self):
-        self.locations = []
-        self.locations.append(["ADAX", "Ada", 34.8, 96.67])
-        self.locations.append(["ALTU", "Altus", 34.59, 99.34])
-        self.locations.append(["ARNE", "Arnett", 36.07, 99.9])
-        self.locations.append(["BEAV", "Beaver", 36.8, -100.53])
-        self.locations.append(["BESS", "Bessie", 35.4, 99.06])
-        self.locations.append(["BIXB", "Bixby", 35.96, 95.87])
-        self.locations.append(["BLAC", "Blackwell", 36.75, 97.25])
-        self.locations.append(["BOIS", "Boise City", 36.69, -102.5])
-        self.locations.append(["BOWL", "Bowlegs", 35.17, 96.63])
-        self.locations.append(["BREC", "Breckinridge", 36.41, 97.69])
-        self.locations.append(["BRIS", "Bristow", 35.78, 96.35])
-        self.locations.append(["BUFF", "Buffalo", 36.83, 99.64])
-        self.locations.append(["BURB", "Burbank", 36.63, 96.81])
-        self.locations.append(["BURN", "Burneyville", 33.89, 97.27])
-        self.locations.append(["BUTL", "Butler", 35.59, 99.27])
-        self.locations.append(["BYAR", "Byars", 34.85, 97])
-        self.locations.append(["CAMA", "Camargo", 36.03, 99.35])
-        self.locations.append(["CENT", "Centrahoma", 34.61, 96.33])
-        self.locations.append(["CHAN", "Chandler", 35.65, 96.8])
-        self.locations.append(["CHER", "Cherokee", 36.75, 98.36])
-        self.locations.append(["CHEY", "Cheyenne", 35.55, 99.73])
-        self.locations.append(["CHIC", "Chickasha", 35.03, 97.91])
-        self.locations.append(["CLAY", "Clayton", 34.66, 95.33])
-        self.locations.append(["CLOU", "Cloudy", 34.22, 95.25])
-        self.locations.append(["COOK", "Cookson", 35.68, 94.85])
-        self.locations.append(["COPA", "Copan", 36.91, 95.89])
-        self.locations.append(["DURA", "Durant", 33.92, 96.32])
-        self.locations.append(["ELRE", "El Reno", 35.55, 98.04])
-        self.locations.append(["ERIC", "Erick", 35.2, 99.8])
-        self.locations.append(["EUFA", "Eufaula", 35.3, 95.66])
-        self.locations.append(["FAIR", "Fairview", 36.26, 98.5])
-        self.locations.append(["FORA", "Foraker", 36.84, 96.43])
-        self.locations.append(["FREE", "Freedom", 36.73, 99.14])
-        self.locations.append(["FTCB", "Fort Cobb", 35.15, 98.47])
-        self.locations.append(["GOOD", "Goodwell", 36.6, -101.6])
-        self.locations.append(["GUTH", "Guthrie", 35.85, 97.48])
-        self.locations.append(["HASK", "Haskell", 35.75, 95.64])
-        self.locations.append(["HINT", "Hinton", 35.48, 98.48])
-        self.locations.append(["HOBA", "Hobart", 34.99, 99.05])
-        self.locations.append(["HOLL", "Hollis", 34.69, 99.83])
-        self.locations.append(["HOOK", "Hooker", 36.86, -101.23])
-        self.locations.append(["HUGO", "Hugo", 34.03, 95.54])
-        self.locations.append(["IDAB", "Idabel", 33.83, 94.88])
-        self.locations.append(["JAYX", "Jay", 36.48, 94.78])
-        self.locations.append(["KENT", "Kenton", 36.83, -102.88])
-        self.locations.append(["KETC", "Ketchum Ranch", 34.53, 97.76])
-        self.locations.append(["LAHO", "Lahoma", 36.38, 98.11])
-        self.locations.append(["LANE", "Lane", 34.31, 96])
-        self.locations.append(["MADI", "Madill", 34.04, 96.94])
-        self.locations.append(["MANG", "Mangum", 34.84, 99.42])
-        self.locations.append(["MARE", "Marena", 36.06, 97.21])
-        self.locations.append(["MAYR", "May Ranch", 36.99, 99.01])
-        self.locations.append(["MCAL", "McAlester", 34.88, 95.78])
-        self.locations.append(["MEDF", "Medford", 36.79, 97.75])
-        self.locations.append(["MEDI", "Medicine Park", 34.73, 98.57])
-        self.locations.append(["MIAM", "Miami", 36.89, 94.84])
-        self.locations.append(["MINC", "Minco", 35.27, 97.96])
-        self.locations.append(["MTHE", "Mt Herman", 34.31, 94.82])
-        self.locations.append(["NEWK", "Newkirk", 36.9, 96.91])
-        self.locations.append(["NOWA", "Nowata", 36.74, 95.61])
-        self.locations.append(["OILT", "Oilton", 36.03, 96.5])
-        self.locations.append(["OKEM", "Okemah", 35.43, 96.26])
-        self.locations.append(["OKMU", "Okmulgee", 35.58, 95.91])
-        self.locations.append(["PAUL", "Pauls Valley", 34.72, 97.23])
-        self.locations.append(["PAWN", "Pawnee", 36.36, 96.77])
-        self.locations.append(["PERK", "Perkins", 36, 97.05])
-        self.locations.append(["PRYO", "Pryor", 36.37, 95.27])
-        self.locations.append(["PUTN", "Putnam", 35.9, 98.96])
-        self.locations.append(["REDR", "Red Rock", 36.36, 97.15])
-        self.locations.append(["RETR", "Retrop", 35.12, 99.36])
-        self.locations.append(["RING", "Ringling", 34.19, 97.59])
-        self.locations.append(["SALL", "Sallisaw", 35.44, 94.8])
-        self.locations.append(["SEIL", "Seiling", 36.19, 99.04])
-        self.locations.append(["SHAW", "Shawnee", 35.36, 96.95])
-        self.locations.append(["SKIA", "Skiatook", 36.42, 96.04])
-        self.locations.append(["SLAP", "Slapout", 36.6, -100.26])
-        self.locations.append(["SPEN", "Spencer", 35.54, 97.34])
-        self.locations.append(["STIG", "Stigler", 35.27, 95.18])
-        self.locations.append(["STIL", "Stillwater", 36.12, 97.1])
-        self.locations.append(["STUA", "Stuart", 34.88, 96.07])
-        self.locations.append(["SULP", "Sulphur", 34.57, 96.95])
-        self.locations.append(["TAHL", "Tahlequah", 35.97, 94.99])
-        self.locations.append(["TALI", "Talihina", 34.71, 95.01])
-        self.locations.append(["TIPT", "Tipton", 34.44, 99.14])
-        self.locations.append(["TISH", "Tishomingo", 34.33, 96.68])
-        self.locations.append(["VINI", "Vinita", 36.78, 95.22])
-        self.locations.append(["WASH", "Washington", 34.98, 97.52])
-        self.locations.append(["WATO", "Watonga", 35.84, 98.53])
-        self.locations.append(["WAUR", "Waurika", 34.17, 97.99])
-        self.locations.append(["WEAT", "Weatherford", 35.51, 98.78])
-        self.locations.append(["WEST", "Westville", 36.01, 94.64])
-        self.locations.append(["WILB", "Wilburton", 34.9, 95.35])
-        self.locations.append(["WIST", "Wister", 34.98, 94.69])
-        self.locations.append(["WOOD", "Woodward", 36.42, 99.42])
-        self.locations.append(["WYNO", "Wynona", 36.52, 96.34])
-        self.locations.append(["NINN", "Ninnekah", 34.97, 97.95])
-        self.locations.append(["ACME", "Acme", 34.81, 98.02])
-        self.locations.append(["APAC", "Apache", 34.91, 98.29])
-        self.locations.append(["HECT", "Hectorville", 35.84, 96])
-        self.locations.append(["ALV2", "Alva", 36.71, 98.71])
-        self.locations.append(["GRA2", "Grandfield", 34.24, 98.74])
-        self.locations.append(["PORT", "Porter", 35.83, 95.56])
-        self.locations.append(["INOL", "Inola", 36.14, 95.45])
-        self.locations.append(["NRMN", "Norman", 35.24, 97.46])
-        self.locations.append(["CLRM", "Claremore", 36.32, 95.65])
-        self.locations.append(["NEWP", "Newport", 34.23, 97.2])
-        self.locations.append(["BROK", "Broken Bow", 34.04, 94.62])
-        self.locations.append(["MRSH", "Marshall", 36.12, 97.61])
-        self.locations.append(["ARD2", "Ardmore", 34.19, 97.09])
-        self.locations.append(["FITT", "Fittstown", 34.55, 96.72])
-        self.locations.append(["OKCN", "Oklahoma City North", 35.56, 97.51])
-        self.locations.append(["OKCW", "Oklahoma City West", 35.47, 97.58])
-        self.locations.append(["OKCE", "Oklahoma City East", 35.47, 97.46])
-        self.locations.append(["CARL", "Lake Carl Blackwell", 36.15, 97.29])
-        self.locations.append(["WEBR", "Webbers Falls", 35.49, 95.12])
-        self.locations.append(["KIN2", "Kingfisher", 35.85, 97.95])
-        self.locations.append(["HOLD", "Holdenville", 35.07, 96.36])
-        self.locations.append(["ANT2", "Antlers", 34.25, 95.67])
-        self.locations.append(["WAL2", "Walters", 34.4, 98.35])
-        
+          
     def get_arrow(self, dir):
-        if dir == "N":
+        if dir in ["N", "North", "north", "NORTH"]:
             arrow = u"\u2193" # downwards pointing arrow
-        elif dir == "E":
+        elif dir in ["E", "East", "east", "EAST"]:
             arrow = u"\u2190" # leftwards pointing arrow
-        elif dir == "S":
+        elif dir in ["S", "South", "south", "SOUTH"]:
             arrow = u"\u2191" # upwards pointing arrow
-        elif dir == "W":
+        elif dir in ["W", "West", "west", "WEST"]:
             arrow = u"\u2192" # rightwards pointing arrow
         elif dir in ["NE","NNE","ENE"]:
             arrow = u"\u2199" # southwest pointing arrow
