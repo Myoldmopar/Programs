@@ -234,7 +234,7 @@ class solarPosition(object):
 class plotting():
     
     def __init__(self):
-        self.stdmeridian = 90
+        self.stdmeridian = 105
         self.plotX = [] # maybe remove since init'd in setLocation
         self.plotY = []
         self.degree_symbol = unichr(176)
@@ -261,6 +261,34 @@ class plotting():
             elif month > 3 and month < 11:
                 retVal = True
             elif month == 11 and date < 4:
+                retVal = True
+        elif year == 2013:
+            if month == 3 and date >= 10:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 3:
+                retVal = True
+        elif year == 2014:
+            if month == 3 and date >= 9:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 2:
+                retVal = True
+        elif year == 2015:
+            if month == 3 and date >= 8:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 1:
+                retVal = True
+        elif year == 2016:
+            if month == 3 and date >= 13:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 6:
                 retVal = True
         else:
             print "DST not yet implemented for years other than 2012...fix me!...defaulting to not DST"
@@ -334,7 +362,7 @@ class Weather(object):
         self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
         
         self.plotter = plotting()
-        self.plotter.setLocation(self.latitude, self.longitude)
+        self.plotter.setLocation(self.latitude, -self.longitude)
         self.county = self.storms.getCounty(self.latitude, self.longitude)
                 
         # init the notification system

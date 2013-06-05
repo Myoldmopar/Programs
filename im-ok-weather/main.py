@@ -344,6 +344,34 @@ class plotting():
                 retVal = True
             elif month == 11 and date < 4:
                 retVal = True
+        elif year == 2013:
+            if month == 3 and date >= 10:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 3:
+                retVal = True
+        elif year == 2014:
+            if month == 3 and date >= 9:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 2:
+                retVal = True
+        elif year == 2015:
+            if month == 3 and date >= 8:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 1:
+                retVal = True
+        elif year == 2016:
+            if month == 3 and date >= 13:
+                retVal = True
+            elif month > 3 and month < 11:
+                retVal = True
+            elif month == 11 and date < 6:
+                retVal = True
         else:
             print "DST not yet implemented for years other than 2012...fix me!...defaulting to not DST"
         return retVal
