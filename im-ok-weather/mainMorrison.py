@@ -21,6 +21,20 @@ import sys
 import StringIO
 import math
 
+#http://www.wunderground.com/cgi-bin/findweather/hdfForecast?query=morrison%2C+co
+#<meta name="og:title" content="Morrison, CO | 79.5&deg; | Scattered Clouds" />
+#<span id="windCompass" class="pwsrt" pwsid="KOKSTILL4" pwssetobject="winddir" pwsunit="english" pwsvariable="winddir" english="" metric="" value="332"></span>
+#       360=due north, 270=due west, 180=due south, 90=due east
+#       therefore:  [337.5, 22.5) = N
+#                   [22.5, 67.5)  = NE
+#                   [67.5, 112.5) = E
+#                   [112.5, 157.5) = SE
+#                   [157.5, 202.5) = S
+#                   [202.5, 247.5) = SW
+#                   [247.5, 292.5) = W
+#                   [292.5, 337.5) = NW
+#<span id="windCompassSpeed" class="pwsrt" pwsid="KOKSTILL4" pwsunit="english" pwsvariable="windspeedmph" english="" metric="">5.0</span>
+
 # a class with storm enumeration and a few workers
 
 class Storms():

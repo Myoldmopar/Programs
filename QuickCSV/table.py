@@ -13,7 +13,7 @@ class TreeViewColumnExample(object):
         self.window.set_title("My Delimiter Bin")
         self.window.set_position(gtk.WIN_POS_CENTER)
         self.window.set_default_size(500,350)
-        self.window.set_icon_from_file("./icon/icon.png")
+        self.window.set_icon_from_file("/home/elee/Programs/MyPrograms/QuickCSV/icon/icon.png")
         
         # create a liststore with string columns to use as the model
         self.liststore = gtk.ListStore(str,str) 
