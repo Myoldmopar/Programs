@@ -365,7 +365,7 @@ class Weather(object):
         self.appname = "im-ok-weather"
         self.unknown = "??"
         self.locale_name = "Morrison"
-        self.url = "http://www.wunderground.com/weatherstation/WXDailyHistory.asp?ID=KCOMORRI9"
+        self.url = "http://www.wunderground.com/cgi-bin/findweather/hdfForecast?query=morrison%2C+co"
         self.degree_symbol = unichr(176)
         self.config_file_path = os.getenv("HOME") + "/.config/" + self.appname
         self.stdmeridian = 105
@@ -451,9 +451,9 @@ class Weather(object):
         lineNum = 0
        
         # flag strings
-        flagTemp = '<td>Temperature:</td>'
-        flagWindSpeed = '<td>Wind Speed:</td>'
-        flagWindDir = '<td>Wind:</td>'
+        flagTemp = 'meta name="og:title"'
+        flagWindSpeed = 'pwsvariable="windspeedmph"'
+        flagWindDir = 'pwsvariable="winddir"'
         flagEnd = '</html>'
         
         # init return values
@@ -486,31 +486,25 @@ class Weather(object):
                 
                 # then start looping over the string until we run out of lines
                 while line:
-                    if line.strip() == flagTemp:
-                        dummy = buff.readline()
-                        lineNum += 1
-                        sTemperatureLine = buff.readline()
-                        lineNum += 1
-                        sTemp = sTemperatureLine.split('>')[2].split('<')[0]
+                    if flagTemp in line:
+                        #<meta name="og:title" content="Morrison, CO | 79.5&deg; | Scattered Clouds" />
+                        sTemp = line.split('|')[1].split('&')[0].strip()
                         fTemp = float(sTemp)
                         temp = int(fTemp)
                         
-                    elif line.strip() == flagWindSpeed:
-                        dummy = buff.readline()
-                        lineNum += 1
-                        sWindSpeedLine = buff.readline()
-                        lineNum += 1
-                        sWind = sWindSpeedLine.split('>')[2].split('<')[0]
+                    elif flagWindSpeed in line:
+                        #<span id="windCompassSpeed" class="pwsrt" pwsid="KOKSTILL4" pwsunit="english" pwsvariable="windspeedmph" english="" metric="">5.0</span>
+                        sWind = line.split('>')[1].split('<')[0]
                         fWind = float(sWind)
                         windspeed = int(fWind)
                         
-                    elif line.strip() == flagWindDir:
-                        sWindDirLine = buff.readline()
-                        lineNum += 1
-                        winddir = sWindDirLine.split('>')[1].split('<')[0]
-                        arrow = self.get_arrow(winddir)
-                        break
-
+                    elif flagWindDir in line:
+                        #<span id="windCompass" class="pwsrt" pwsid="KOKSTILL4" pwssetobject="winddir" pwsunit="english" pwsvariable="winddir" english="" metric="" value="332"></span>
+                        winddir = line.split('=')[-1].split('"')[1]
+                        if not float(winddir):
+                            pass
+                        arrow = self.get_arrow_from_compass(winddir)
+                                                
                     elif flagEnd in line:
                         break
                                 
@@ -567,27 +561,29 @@ class Weather(object):
         # callback return value, so that gobject knows it can continue cycling
         return True
           
-    def get_arrow(self, dir):
-        if dir in ["N", "North", "north", "NORTH"]:
+    def get_arrow_from_compass(self, angle):
+        angle = int(angle)
+        if angle < 22.5 or angle >= 337.5:
             arrow = u"\u2193" # downwards pointing arrow
-        elif dir in ["E", "East", "east", "EAST"]:
+        elif angle < 112.5 and angle >= 67.5:
             arrow = u"\u2190" # leftwards pointing arrow
-        elif dir in ["S", "South", "south", "SOUTH"]:
+        elif angle < 202.5 and angle >= 157.5:
             arrow = u"\u2191" # upwards pointing arrow
-        elif dir in ["W", "West", "west", "WEST"]:
+        elif angle < 292.5 and angle >= 247.5:
             arrow = u"\u2192" # rightwards pointing arrow
-        elif dir in ["NE","NNE","ENE"]:
+        elif angle < 67.5 and angle >= 22.5:
             arrow = u"\u2199" # southwest pointing arrow
-        elif dir in ["NW", "WNW", "NNW"]:
+        elif angle < 337.5 and angle >= 292.5:
             arrow = u"\u2198" # southeast pointing arrow
-        elif dir in ["SE", "SSE", "ESE"]:
+        elif angle < 157.5 and angle >= 112.5:
             arrow = u"\u2196" # northwest pointing arrow
-        elif dir in ["SW", "SSW", "WSW"]:
+        elif angle < 247.5 and angle >= 202.5:
             arrow = u"\u2197" # northeast pointing arrow
         else:
-            print " Oops...bad wind direction passed to self.get_arrow(), dir = " + dir
-        return arrow
-
+            print " Oops...bad wind direction passed to self.get_arrow_from_compass(), dir = " + dir
+        print "Direction = %s, Arrow = %s" % (angle, arrow)
+        return arrow            
+          
     def main(self):
         gtk.main()
 
