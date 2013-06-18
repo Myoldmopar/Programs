@@ -35,13 +35,14 @@ class my(object):
         self.init_menu()
         
         # init the app-indicator ability
-        self.ind = appindicator.Indicator.new(self.appname,"", appindicator.IndicatorCategory.APPLICATION_STATUS)
+        self.ind = appindicator.Indicator.new(self.appname, "indicator-my", appindicator.IndicatorCategory.APPLICATION_STATUS)
+        self.ind.set_title("indicator-my")
         self.ind.set_status(appindicator.IndicatorStatus.ACTIVE)
         self.ind.set_menu(self.menu)
         
         # update the indicator label with new data
     #self.ind.set_icon_theme_path(self.homeDir + "/bin")
-        self.ind.set_icon_full(self.homeDir + "/bin/ubuntu.png", "my.desktop")
+        self.ind.set_icon_full(self.homeDir + "/Pictures/ubuntu.png", "my.desktop")
 
         # we'll also do some other Unity mods
         self.myChrome()
