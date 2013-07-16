@@ -41,7 +41,6 @@ class my(object):
         self.ind.set_menu(self.menu)
         
         # update the indicator label with new data
-    #self.ind.set_icon_theme_path(self.homeDir + "/bin")
         self.ind.set_icon_full(self.homeDir + "/Pictures/ubuntu.png", "my.desktop")
 
         # we'll also do some other Unity mods
@@ -75,13 +74,39 @@ class my(object):
         self.menu_sep_item = Gtk.SeparatorMenuItem()
         self.menu.append(self.menu_sep_item)
         self.menu_sep_item.show()
-               
+    
+        # mouse probing
+        self.menu_mouseProbe_item = Gtk.MenuItem("Install Logitech Mouse Driver")
+        self.menu.append(self.menu_mouseProbe_item)
+        self.menu_mouseProbe_item.show()
+        self.menu_mouseProbe_item.connect("activate", self.mouseProbe)
+        
+        # separator for cleanliness
+        self.menu_sep_item2 = Gtk.SeparatorMenuItem()
+        self.menu.append(self.menu_sep_item2)
+        self.menu_sep_item2.show()
+    
+        # NREL Mount/Unmount
+        self.menu_mountNREL_item = Gtk.MenuItem("Mount NREL Shares")
+        self.menu.append(self.menu_mountNREL_item)
+        self.menu_mountNREL_item.show()
+        self.menu_mountNREL_item.connect("activate", self.mountNREL)
+        
+        self.menu_umountNREL_item = Gtk.MenuItem("Unmount NREL Shares")
+        self.menu.append(self.menu_umountNREL_item)
+        self.menu_umountNREL_item.show()
+        self.menu_umountNREL_item.connect("activate", self.umountNREL)
+            
+        # separator for cleanliness
+        self.menu_sep_item3 = Gtk.SeparatorMenuItem()
+        self.menu.append(self.menu_sep_item3)
+        self.menu_sep_item3.show()
+                   
         # quit item
         self.menu_quit_item = Gtk.MenuItem("Quit")
         self.menu.append(self.menu_quit_item)
         self.menu_quit_item.show()
         self.menu_quit_item.connect("activate",self.destroy)
-            
    
     def openToDoList(self, widget):
         if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
@@ -109,10 +134,15 @@ class my(object):
     
     def runCanto(self):
         os.system('gnome-terminal -e "canto" --geometry=150x40')
+            
+    def mouseProbe(self, widget):
+        os.system('reinstallLogitechMouseModule')
         
-    #for quickitem in ql.get_children():
-    #if quickitem.property_get('windowpath')==windowpath:
-        #ql.child_delete(quickitem)        
+    def mountNREL(self, widget):
+        os.system('MountNREL mount')
+        
+    def umountNREL(self, widget):
+        os.system('MountNREL umount')
             
 if __name__ == "__main__":     
     
