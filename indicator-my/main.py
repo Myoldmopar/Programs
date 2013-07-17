@@ -96,6 +96,11 @@ class my(object):
         self.menu.append(self.menu_umountNREL_item)
         self.menu_umountNREL_item.show()
         self.menu_umountNREL_item.connect("activate", self.umountNREL)
+        
+        self.menu_rsyncNRELhome_item = Gtk.MenuItem("Rsync NREL HOME to Server")
+        self.menu.append(self.menu_rsyncNRELhome_item)
+        self.menu_rsyncNRELhome_item.show()
+        self.menu_rsyncNRELhome_item.connect("activate", self.rsyncNRELhome)
             
         # separator for cleanliness
         self.menu_sep_item3 = Gtk.SeparatorMenuItem()
@@ -143,6 +148,9 @@ class my(object):
         
     def umountNREL(self, widget):
         os.system('MountNREL umount')
+        
+    def rsyncNRELhome(self, widget):
+        os.system('gnome-terminal -e "rsync -rauW --progress NREL_ToSync/HOME NREL" --window-with-profile=HoldOpen')
             
 if __name__ == "__main__":     
     
