@@ -535,7 +535,7 @@ class Weather(object):
         self.ind.set_label(sIndicator)
         
         # send a notification message
-        sNotify = "Temperature:\t%s\nWind Speed:\t%s\nWind Direction:\t%s" % (str(temp), str(windspeed), winddir)
+        sNotify = "Temperature:\t%s\nWind Speed:\t%s\nWind Direction:\t%s" % (str(temp), str(windspeed), self.get_arrowName_from_compass(winddir))
         if self.notifs:
             if not theseWarnings:
                 self.notification.update(self.locale_name + " Weather Updated", sNotify, '') 
@@ -583,6 +583,29 @@ class Weather(object):
             print " Oops...bad wind direction passed to self.get_arrow_from_compass(), dir = " + dir
         print "Direction = %s, Arrow = %s" % (angle, arrow)
         return arrow            
+
+    def get_arrowName_from_compass(self, angle):
+        angle = int(angle)
+        if angle < 22.5 or angle >= 337.5:
+            arrow = "North" # downwards pointing arrow
+        elif angle < 112.5 and angle >= 67.5:
+            arrow = "East" # leftwards pointing arrow
+        elif angle < 202.5 and angle >= 157.5:
+            arrow = "South" # upwards pointing arrow
+        elif angle < 292.5 and angle >= 247.5:
+            arrow = "West" # rightwards pointing arrow
+        elif angle < 67.5 and angle >= 22.5:
+            arrow = "Northeast" # southwest pointing arrow
+        elif angle < 337.5 and angle >= 292.5:
+            arrow = "Northwest" # southeast pointing arrow
+        elif angle < 157.5 and angle >= 112.5:
+            arrow = "Southeast" # northwest pointing arrow
+        elif angle < 247.5 and angle >= 202.5:
+            arrow = "Southwest" # northeast pointing arrow
+        else:
+            print " Oops...bad wind direction passed to self.get_arrow_from_compass(), dir = " + dir
+        print "Direction = %s, Arrow = %s" % (angle, arrow)
+        return arrow   
           
     def main(self):
         gtk.main()
