@@ -141,7 +141,7 @@ class my(object):
         os.system('gnome-terminal -e "canto" --geometry=150x40')
             
     def mouseProbe(self, widget):
-        os.system('reinstallLogitechMouseModule')
+        os.system('gksudo /home/elee/bin/reinstallLogitechMouseModule')
         
     def mountNREL(self, widget):
         os.system('MountNREL mount')
