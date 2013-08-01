@@ -11,7 +11,7 @@
 # take the entire contents here, paste them into a file, uncomment the lines
 # note that the first line must remain commented to be a she-bang
 # the second code line is just a comment
-# save the file at the above path
+# save the file at the below path
 # then go to that folder in nautilus (you may need to ctrl-h in order to see the hidden .local folder)
 # find this file and drag and drop it directly on to the unity launcher
 
