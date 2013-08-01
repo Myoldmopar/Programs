@@ -63,13 +63,7 @@ class my(object):
         if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
             self.menu_todo_item.show()
         self.menu_todo_item.connect("activate", self.openToDoList)
-    
-        # canto RSS reader item
-        self.menu_rss_item = Gtk.MenuItem("Run Canto RSS Reader")
-        self.menu.append(self.menu_rss_item)
-        self.menu_rss_item.show()
-        self.menu_rss_item.connect("activate", self.forkCanto)
-    
+            
         # separator for cleanliness
         self.menu_sep_item = Gtk.SeparatorMenuItem()
         self.menu.append(self.menu_sep_item)
@@ -132,14 +126,7 @@ class my(object):
 
     def openGMail2(self, widget):
         webbrowser.open("http://mail.google.com")
-    
-    def forkCanto(self, widget):
-        p = Process(target=self.runCanto)
-        p.start()
-    
-    def runCanto(self):
-        os.system('gnome-terminal -e "canto" --geometry=150x40')
-            
+               
     def mouseProbe(self, widget):
         os.system('gksudo /home/elee/bin/reinstallLogitechMouseModule')
         
