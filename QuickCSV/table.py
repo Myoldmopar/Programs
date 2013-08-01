@@ -4,13 +4,13 @@ import pygtk
 pygtk.require('2.0')
 import gtk
 
-class TreeViewColumnExample(object):
+class QuickDelimiterApp(object):
 
     def __init__(self):
         
         # Create a new window and title it and center it
         self.window = gtk.Window(gtk.WINDOW_TOPLEVEL)
-        self.window.set_title("My Delimiter Bin")
+        self.window.set_title("My Delimiter Investigator")
         self.window.set_position(gtk.WIN_POS_CENTER)
         self.window.set_default_size(500,350)
         self.window.set_icon_from_file("/home/elee/Programs/MyPrograms/QuickCSV/icon/icon.png")
@@ -186,5 +186,5 @@ class TreeViewColumnExample(object):
 if __name__ == "__main__":
     
     # create the example window
-    tvcexample = TreeViewColumnExample()
+    QuickDelimiterApp()
  
