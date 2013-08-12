@@ -534,8 +534,14 @@ class Weather(object):
         # update the indicator label with new data
         self.ind.set_label(sIndicator)
         
+        # for some reason, the direction appears to come in as either a numeric angle *or* a direction name......
+        try:
+            thisDirName = self.get_arrowName_from_compass(winddir)
+        except:
+            thisDirName = winddir
+            
         # send a notification message
-        sNotify = "Temperature:\t%s\nWind Speed:\t%s\nWind Direction:\t%s" % (str(temp), str(windspeed), self.get_arrowName_from_compass(winddir))
+        sNotify = "Temperature:\t%s\nWind Speed:\t%s\nWind Direction:\t%s" % (str(temp), str(windspeed), thisDirName)
         if self.notifs:
             if not theseWarnings:
                 self.notification.update(self.locale_name + " Weather Updated", sNotify, '') 
