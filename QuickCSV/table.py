@@ -84,8 +84,13 @@ class QuickDelimiterApp(object):
         gtk.main_quit()
         return False
         
-    def btnPasteHeader_clicked(self, widget):
+    def PasteHeaderGivenAFile(self, fileName):
+        f = open(fileName)
+        line = f.readline().replace(",","\n")
+        f.close()
+        self.pasteIn(dataIn=line)
         
+    def btnPasteHeader_clicked(self, widget):
         # create the file chooser dialog
         chooser = gtk.FileChooserDialog(title="Choose a CSV file", action=gtk.FILE_CHOOSER_ACTION_OPEN, buttons=(gtk.STOCK_CANCEL,gtk.RESPONSE_CANCEL,gtk.STOCK_OPEN,gtk.RESPONSE_OK))
         chooser.set_select_multiple(False)
@@ -96,10 +101,7 @@ class QuickDelimiterApp(object):
         response = chooser.run()
         if response == gtk.RESPONSE_OK:
             fileName = chooser.get_filename()
-            f = open(fileName)
-            line = f.readline().replace(",","\n")
-            f.close()
-            self.pasteIn(dataIn=line)
+            self.PasteHeaderGivenAFile(fileName)
         chooser.destroy()
         
     def key_press(self, widget, event):        
