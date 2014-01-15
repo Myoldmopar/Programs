@@ -4,8 +4,10 @@
 #python-gobject maybe?
 #python-gobject-dev maybe?
 #gobject-introspection maybe?
+#python-git (0.1.6)
 #canto?
 
+import git
 import os
 import sys
 from gi.repository import Dbusmenu, Unity, GObject, Notify, Gtk, AppIndicator3 as appindicator
@@ -60,9 +62,21 @@ class my(object):
         # ToDo list item
         self.menu_todo_item = Gtk.MenuItem("Open ToDo List")
         self.menu.append(self.menu_todo_item)
-        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
+        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.mkd"):
             self.menu_todo_item.show()
         self.menu_todo_item.connect("activate", self.openToDoList)
+        
+        # Push/Pull ToDo list
+        self.menu_pull_todo = Gtk.MenuItem("Pull ToDo List")
+        self.menu.append(self.menu_pull_todo)
+        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.mkd"):
+            self.menu_pull_todo.show()
+        self.menu_pull_todo.connect("activate", self.pullToDoList)
+        self.menu_push_todo = Gtk.MenuItem("Push ToDo List")
+        self.menu.append(self.menu_push_todo)
+        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.mkd"):
+            self.menu_push_todo.show()
+        self.menu_push_todo.connect("activate", self.pushToDoList)
         
         # separator for cleanliness
         self.menu_sep_item2 = Gtk.SeparatorMenuItem()
@@ -97,8 +111,25 @@ class my(object):
         self.menu_quit_item.connect("activate",self.destroy)
    
     def openToDoList(self, widget):
-        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.todo"):
-            os.system("xdg-open " + self.homeDir + "/Documents/ToDoList/todo.todo")
+        if os.path.exists(self.homeDir + "/Documents/ToDoList/todo.mkd"):
+            os.system("xdg-open " + self.homeDir + "/Documents/ToDoList/todo.mkd")
+     
+    def pushToDoList(self, widget):
+        r = git.Repo('/home/elee/Documents/ToDoList')
+        if r.is_dirty:
+            g = git.Git('/home/elee/Documents/ToDoList')
+            g.execute(['git','commit', '-a', '-m UpdatedToDoList'])
+            g.execute(['git','push'])
+            self.notif = Notify.Notification.new("To-do List Status", "Changes pushed...", "") 
+        else:
+            self.notif = Notify.Notification.new("To-do List Status", "No changes to push...", "") 
+        self.notif.show()
+
+    def pullToDoList(self, widget):
+        g = git.Git('/home/elee/Documents/ToDoList')
+        g.execute(['git', 'pull'])
+        self.notif = Notify.Notification.new("To-do List Status", "Changes pulled...", "") 
+        self.notif.show()
      
     def myChrome(self):
         self.chromeDesktop = Unity.LauncherEntry.get_for_desktop_id("google-chrome.desktop")
