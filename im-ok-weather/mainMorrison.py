@@ -49,16 +49,18 @@ class Storms():
         self.sTstormWarning  = 'Severe Thunderstorm Warning'
         self.TstormWatch     = 4
         self.sTstormWatch    = 'Severe Thunderstorm Watch'
+	self.WindAdvisory    = 5
+	self.sWindAdvisory   = 'Wind Advisory'
     
     def getCounty(self, latitude, longitude):
         # open the connection, note longitude must be -ve for west
         try:
-            f = urllib.urlopen('http://labs.silverbiology.com/countylookup/lookup.php?cmd=findCounty&DecimalLatitude=%s&DecimalLongitude=%s' % (latitude, -longitude))
+            f = urllib.urlopen('http://labs.silverbiology.com/countylookup/lookup.php?cmd=findCounty&DecimalLatitude=%s&DecimalLongitude=%s' % (latitude, longitude))
             # read the results
             s = f.read()
         except:
             return 'CouldntConnectCounty'
-        # take out start and end curly brackets
+	# take out start and end curly brackets
         s2 = s[1:-1]
         # remove all in-string quotes
         s3 = s2.replace('"', '')
@@ -76,7 +78,7 @@ class Storms():
         for entry in entries:
             if entry[0] == 'County':
                 county = entry[1]
-        return county        
+	return county        
    
     def getWatchWarnings(self, county):
         # init line counter
@@ -93,7 +95,7 @@ class Storms():
             return watchWarnings
         # this is the title of the state box where warnings would be found
         sState='<a name="Colorado"></a>'
-        # check if oklahoma is even in the entire contents
+        # check if the state is even in the entire contents
         if not sState in s:
             print "Didn't find Colorado in the severe list"
             return watchWarnings
@@ -105,53 +107,100 @@ class Storms():
         # then start looping over the string until we run out of lines
         while line:
             if line.strip() == sState:
-                # we've found our state box, now let's skip the next two lines, since they are just box definitions
+                
+		# we've found our state box, here's the way it's structured right now:
+		
+		# <a name="Colorado"></a>
+		# <dl class="accordion wui-accordion" data-accordion>
+		# <dd>
+		# <a href="#group-5">Colorado</a>
+		# <div id="group-5" class="content">
+		# <strong>Wind Advisory</strong>
+		# <ul class="inline-list">
+		# <li><a href="/US/CO/.html"></a></li>
+		# <li><a href="/US/CO/.html"></a></li>
+		# <li><a href="/US/CO/011.html">Central Gunnison and Uncompahgre River Basin</a></li>
+		# <li><a href="/US/CO/002.html">Central Yampa River Basin</a></li>
+		# <li><a href="/US/CO/090.html">Yuma County</a></li>
+		# </ul>
+		# <strong>Fire Weather Warning</strong>
+		# <ul class="inline-list">
+		# <li><a href="/US/CO/.html"></a></li>
+		# <li><a href="/US/CO/.html"></a></li>
+		# <li><a href="/US/CO/089.html">Crowley County</a></li>
+		# <li><a href="/US/CO/091.html">Kit Carson County</a></li>
+		# <li><a href="/US/CO/090.html">Yuma County</a></li>
+		# </ul>
+		# </div>  -- STOP HERE
+		
+		# so we need to: 
+		# 1) ignore the accordian, dd, a href, and div id lines. (4)
+		dummy = buff.readline()
+                lineNum += 1
+                dummy = buff.readline()
+                lineNum += 1
                 dummy = buff.readline()
                 lineNum += 1
                 dummy = buff.readline()
                 lineNum += 1
-                # now we need to start processing the warnings.  These come in quadrature:
-                # 1: a line with boxTitle in it specifying the watch/warning type
-                # 2: a line that says warnList
-                # 3: a line that contains a comma delimited list of these: <a href="SomeLinkPath.html">CountyOrLandmarkName</a>
-                # 4: a </div> line
-                lboxTitle = buff.readline()
-                lineNum += 1
-                while not 'Footer' in lboxTitle:
-                    # read in relevant and dummy lines for this warn box
-                    warnList = buff.readline()
-                    lineNum += 1
-                    warnLocations = buff.readline()
-                    lineNum += 1
-                    div      = buff.readline()
-                    lineNum += 1
+                
+		# 2) start reading each group of advisories
+		lineTrimmed = buff.readline()
+		lineNum += 1
+		
+                counter = 0
+		while not '</div>' in lineTrimmed:
+		    
+		    # increment the counters to avoid continuing to read infinitely
+		    counter += 1
+		    if counter >= 10000:
+			print "Hit max watch/warning counters, quitting looking"
+			return watchWarnings
+		
+		    if '<strong>' in lineTrimmed:
+			
+			# process the warning type into a useful parameter
+			ignore, thisWarnType = self.getWarnType(lineTrimmed)
                     
-                    # process the warning type into a useful parameter
-                    ignore, thisWarnType = self.getWarnType(lboxTitle)
-                    
-                    # if we aren't ignoring it, do more stuff
-                    if not ignore:
-                        if county in warnLocations:
-                            watchWarnings.append(thisWarnType)
-                            #print watchWarnings
-                    
-                    # read another box title
-                    lboxTitle = buff.readline()
-                    lineNum += 1
-                    if 'Footer' in lboxTitle:
-                        break
-                        
+			# read the next line because it is just the UI command
+			lineTrimmed = buff.readline()
+			lineNum += 1
+			
+			# then start reading the county lines
+			while True:
+			    
+			    lineTrimmed = buff.readline()
+			    lineNum += 1
+			
+			    if '</ul>' in lineTrimmed:
+				break
+			
+			    if not ignore:
+				if county in lineTrimmed:
+				    watchWarnings.append(thisWarnType)
+				    break
+				    
+		    else: # strong *not* in lineTrimmed
+			
+			# just read another line
+			lineTrimmed = buff.readline()
+			lineNum += 1
+			
             # get the next line if it exists
             line = buff.readline()
             lineNum += 1
+	    
+	    # end the line reading if we hit the end of the html
+	    if '</html>' in line:
+		break
         
-        #TODO: Verify that storms are read in properly
+	#TODO: Verify that storms are read in properly
         #watchWarnings.append(self.TstormWarning)
         return watchWarnings
             
     def getWarnType(self, str):
         # expects a line like:
-        # <div class="boxTitle">WarningOrWatchType</div>
+        # <strong>Wind Advisory</strong>
         # with 'Tornado Warning', 'Tornado Watch', 'Severe Thunderstorm Warning', or 'Severe Thunderstorm Watch'...any others are ignored
         if self.sTornadoWarning in str:
             return False, self.TornadoWarning
@@ -161,6 +210,8 @@ class Storms():
             return False, self.TstormWarning
         elif self.sTstormWatch in str:
             return False, self.TstormWatch
+	elif self.sWindAdvisory in str:
+	    return False, self.WindAdvisory
         else:
             return True, self.NoStorms
    
@@ -305,7 +356,7 @@ class plotting():
             elif month == 11 and date < 6:
                 retVal = True
         else:
-            print "DST not yet implemented for years other than 2012...fix me!...defaulting to not DST"
+            print "DST not yet implemented for years later than 2016...defaulting to not DST"
         return retVal
 
     def plotSolarToday(self, widget):
@@ -371,8 +422,14 @@ class Weather(object):
         self.stdmeridian = 105
         self.storms = Storms()
         
+	# morrison
         self.latitude = 39.651667
         self.longitude = -105.190278
+	
+	# cheyenne county hack
+	self.latitude = 38.818532
+	self.longitude = -102.593761
+	
         self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
         
         self.plotter = plotting()
@@ -397,7 +454,7 @@ class Weather(object):
                                     
         # do a refresh once initially
         self.do_a_refresh()
-                        
+
         # then set up the timer
         self.timer = gobject.timeout_add(self.update_interval_ms, self.do_a_refresh)
 
@@ -451,11 +508,19 @@ class Weather(object):
         lineNum = 0
        
         # flag strings
-        flagTemp = 'meta name="og:title"'
+        flagTemp = 'pwsvariable="tempf"'
         flagWindSpeed = 'pwsvariable="windspeedmph"'
         flagWindDir = 'pwsvariable="winddir"'
         flagEnd = '</html>'
         
+	preferredLocation = 'KCOLAKEW19'
+	preferredTemp = None
+	preferredSpeed = None
+	preferredDir = None
+	preferredTempFound = False
+	preferredSpeedFound = False
+	preferredDirFound = False
+	
         # init return values
         temp = self.unknown
         windspeed = self.unknown
@@ -486,38 +551,68 @@ class Weather(object):
                 
                 # then start looping over the string until we run out of lines
                 while line:
-                    if flagTemp in line:
-                        #<meta name="og:title" content="Morrison, CO | 79.5&deg; | Scattered Clouds" />
-                        sTemp = line.split('|')[1].split('&')[0].strip()
-                        fTemp = float(sTemp)
-                        temp = int(fTemp)
+                    
+		    if flagTemp in line:
+			if preferredTempFound:
+			    pass
+			else:
+			    sTemp = line.split('=')[-1].split('"')[1] #line.split('|')[1].split('&')[0].strip()
+			    fTemp = float(sTemp)
+			    temp = int(fTemp)
+			    if preferredLocation in line:
+				preferredTemp = temp
+				preferredTempFound = True
                         
                     elif flagWindSpeed in line:
-                        #<span id="windCompassSpeed" class="pwsrt" pwsid="KOKSTILL4" pwsunit="english" pwsvariable="windspeedmph" english="" metric="">5.0</span>
-                        sWind = line.split('>')[1].split('<')[0]
-                        fWind = float(sWind)
-                        windspeed = int(fWind)
-                        
-                    elif flagWindDir in line:
-                        #<span id="windCompass" class="pwsrt" pwsid="KOKSTILL4" pwssetobject="winddir" pwsunit="english" pwsvariable="winddir" english="" metric="" value="332"></span>
-                        winddir = line.split('=')[-1].split('"')[1]
-                        if not float(winddir):
-                            pass
-                        arrow = self.get_arrow_from_compass(winddir)
+			if preferredSpeedFound:
+			    pass
+			else:
+			    sWind = line.split('=')[-1].split('"')[1]
+			    fWind = float(sWind)
+			    windspeed = int(fWind)
+			    if preferredLocation in line:
+				preferredSpeed = windspeed
+				preferredSpeedFound = True
                                                 
+                    elif flagWindDir in line:
+			if preferredDirFound:
+			    pass
+			else:
+			    winddir = line.split('=')[-1].split('"')[1]
+			    arrow = ""
+			    try:
+				d = float(double)
+				arrow = self.get_arrow_from_compass(winddir)
+			    except:
+				arrow = self.get_arrow_from_compass_dirstring(winddir)                       
+			    if preferredLocation in line:
+				preferredDir = arrow
+				preferredDirFound = True
+                        			
                     elif flagEnd in line:
-                        break
+			break
                                 
                     # get the next line if it exists
                     line = buff.readline()
                     lineNum += 1
             
-            except:
-                
-                # just pass along with whatever has been successfully set
-                # this will help clue into the problem item
-                pass
+            except Exception as e:
             
+		print "Exception in do_a_refresh..."
+		print line
+		print e
+                
+	# take the "preferred location info if it existed"
+	if preferredDirFound:
+	    temp = preferredTemp
+	    #print "using preferredTemp"
+	if preferredDirFound:
+	    windspeed = preferredSpeed
+	    #print "using preferredSpeed"
+	if preferredDirFound:
+	    arrow = preferredDir
+	    #print "using preferredDir"
+	    
         # create an update string
         sIndicator = " %s%sF  %s%s " % (str(temp), self.degree_symbol, str(windspeed), arrow)
         
@@ -587,7 +682,7 @@ class Weather(object):
             arrow = u"\u2197" # northeast pointing arrow
         else:
             print " Oops...bad wind direction passed to self.get_arrow_from_compass(), dir = " + dir
-        print "Direction = %s, Arrow = %s" % (angle, arrow)
+        #print "Direction = %s, Arrow = %s" % (angle, arrow)
         return arrow            
 
     def get_arrowName_from_compass(self, angle):
@@ -610,9 +705,32 @@ class Weather(object):
             arrow = "Southwest" # northeast pointing arrow
         else:
             print " Oops...bad wind direction passed to self.get_arrow_from_compass(), dir = " + dir
-        print "Direction = %s, Arrow = %s" % (angle, arrow)
+        #print "Direction = %s, Arrow = %s" % (angle, arrow)
         return arrow   
           
+    def get_arrow_from_compass_dirstring(self, sAngle):
+        sAngle = sAngle.upper()
+        if sAngle in ["N", "NORTH"]:
+            arrow = u"\u2193" # downwards pointing arrow
+        elif sAngle in ["E", "EAST"]:
+            arrow = u"\u2190" # leftwards pointing arrow
+        elif sAngle in ["S", "SOUTH"]:
+            arrow = u"\u2191" # upwards pointing arrow
+        elif sAngle in ["W", "WEST"]:
+            arrow = u"\u2192" # rightwards pointing arrow
+        elif sAngle in ["NNE", "NE", "ENE"]:
+            arrow = u"\u2199" # southwest pointing arrow
+        elif sAngle in ["NNW", "NW", "WNW"]:
+            arrow = u"\u2198" # southeast pointing arrow
+        elif sAngle in ["SSE", "SE", "ESE"]:
+            arrow = u"\u2196" # northwest pointing arrow
+        elif sAngle in ["SSW", "SW", "WSW"]:
+            arrow = u"\u2197" # northeast pointing arrow
+        else:
+            print " Oops...bad wind direction passed to self.get_arrow_from_compass_dirstring(), dir = " + dir
+        #print "Direction = %s, Arrow = %s" % (sAngle, arrow)
+        return arrow            	  
+	  
     def main(self):
         gtk.main()
 
