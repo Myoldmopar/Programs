@@ -427,8 +427,8 @@ class Weather(object):
         self.longitude = -105.190278
 	
 	# cheyenne county hack
-	self.latitude = 38.818532
-	self.longitude = -102.593761
+	#self.latitude = 38.818532
+	#self.longitude = -102.593761
 	
         self.update_interval_ms = 300000 # 3e5 ms = 300 seconds = 5 minutes = mesonet update frequency
         
@@ -642,16 +642,22 @@ class Weather(object):
                 self.notification.update(self.locale_name + " Weather Updated", sNotify, '') 
                 self.notification.show()
             elif self.storms.TornadoWarning in theseWarnings:
-                self.notification.update(self.locale_name + " Weather Updated", "TORNADO WARNING!", '') 
+                self.notification.update(self.locale_name + " Weather Updated", sNotify+"\n ** TORNADO WARNING!", '') 
                 self.notification.show()
             elif self.storms.TornadoWatch in theseWarnings:
-                self.notification.update(self.locale_name + " Weather Updated", "Tornado Watch!", '') 
+                self.notification.update(self.locale_name + " Weather Updated", sNotify+"\n ** Tornado Watch!", '') 
                 self.notification.show()
             elif self.storms.TstormWarning in theseWarnings:
-                self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Warning!", '') 
+                self.notification.update(self.locale_name + " Weather Updated", sNotify+"\n ** Severe Thunderstorm Warning!", '') 
                 self.notification.show()
             elif self.storms.TstormWatch in theseWarnings:
-                self.notification.update(self.locale_name + " Weather Updated", "Severe Thunderstorm Watch", '') 
+                self.notification.update(self.locale_name + " Weather Updated", sNotify+"\n ** Severe Thunderstorm Watch", '') 
+                self.notification.show()
+	    elif self.storms.WindAdvisory in theseWarnings:
+                self.notification.update(self.locale_name + " Weather Updated", sNotify+"\n ** Wind Advisory", '') 
+                self.notification.show()
+            else:
+                self.notification.update(self.locale_name + " Weather Updated", sNotify+"\n ** Unkown watch/warning state", '') 
                 self.notification.show()
                 
         # store the current time and temperature for plotting
